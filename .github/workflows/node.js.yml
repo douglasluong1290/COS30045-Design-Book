@@ -1,0 +1,36 @@
+name: Node.js CI
+on:
+    push:
+        branches: [ "main" ]
+    pull_request:
+        branches: [ "main" ]
+jobs:
+    build:
+        runs-on: self-hosted
+        strategy:
+            matrix:
+                node-version: [22.x]
+        steps:
+        - uses: actions/checkout@v4
+        - name: Use Node.js 22
+          uses: actions/setup-node@v4
+          with:
+            node-version: ${{ matrix.node-version }}
+            cache: 'npm'
+            cache-dependency-path: './package-lock.json'
+        - run: npm ci
+        - run: npm run build --if-present
+        - name: Deploy to Mercury via lftp
+          env:
+            MERCURY_USER: ${{ secrets.MERCURY_USER }}
+            MERCURY_PASS: ${{ secrets.MERCURY_PASS }}
+          run:
+            which lftp
+            lftp --version | head -1
+            lftp -c "
+                set sftp:auto-confirm yes;
+                open -u $MERCURY_USER,$MERCURY_PASS sftp://mercury.swin.edu.au;
+                cd cos30045/www/htdocs;
+                mkdir -f design-book;
+                mirror -R --delete --verbose ./dist design-book
+            "

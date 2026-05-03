@@ -1,0 +1,4 @@
+SSLRequireSSL
+
+require ldap-user s104358130
+require ldap-user s105548505
