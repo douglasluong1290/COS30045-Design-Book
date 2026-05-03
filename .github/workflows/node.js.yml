@@ -24,7 +24,7 @@ jobs:
           env:
             MERCURY_USER: ${{ secrets.MERCURY_USER }}
             MERCURY_PASS: ${{ secrets.MERCURY_PASS }}
-          run:
+          run: |
             which lftp
             lftp --version | head -1
             lftp -c "
