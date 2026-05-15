@@ -303,6 +303,123 @@ code {
   }
 }
 
+/* --------------------------------------------------------------------
+   Scrollytelling layout — sticky chart on the right, scrolling steps
+   on the left. Inspired by stuff.co.nz interactives.
+   -------------------------------------------------------------------- */
+
+.scrolly {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 48px;
+  align-items: start;
+  margin-bottom: 36px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 60vh;
+  padding: 30vh 0 50vh;
+
+  @media (max-width: 1024px) {
+    gap: 40vh;
+    padding: 12vh 0 30vh;
+  }
+}
+
+.step {
+  padding: 28px 30px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 17px;
+  line-height: 160%;
+  opacity: 0.45;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease, transform 0.4s ease, border-color 0.4s ease,
+    box-shadow 0.4s ease;
+
+  strong { color: var(--text-h); font-weight: 600; }
+
+  p { margin: 0; }
+  p + p { margin-top: 14px; }
+
+  .step-eyebrow {
+    font-size: 12px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .caveat {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-bg);
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+    line-height: 155%;
+  }
+
+  &.is-active {
+    opacity: 1;
+    transform: translateY(0);
+    border-color: var(--accent-border);
+    box-shadow: var(--shadow);
+  }
+}
+
+.kpi-strip--inline {
+  margin-top: 18px;
+  margin-bottom: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+
+  li { padding: 12px 14px; }
+  .kpi-value { font-size: 22px; }
+  .kpi-label { font-size: 11px; }
+}
+
+.chart-sticky {
+  position: sticky;
+  top: 6vh;
+  height: 88vh;
+  display: flex;
+  align-items: stretch;
+
+  & > .chart-placeholder {
+    width: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  & .placeholder-canvas {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  @media (max-width: 1024px) {
+    position: sticky;
+    top: 0;
+    height: 55vh;
+    z-index: 5;
+    background: var(--bg);
+    padding-top: 8px;
+    border-bottom: 1px solid var(--border);
+    margin: 0 -20px;
+    padding-inline: 20px;
+    order: -1;
+  }
+}
+
 .kpi-strip {
   list-style: none;
   padding: 0;
