@@ -388,6 +388,70 @@ code {
   .kpi-label { font-size: 11px; }
 }
 
+/* Full-page chapter variant — used by Chapter 3 (slicer-driven) */
+.chapter--fullpage {
+  .chapter-body--wide {
+    max-width: 80ch;
+    margin-bottom: 32px;
+  }
+}
+
+.chart-placeholder--full {
+  margin: 0 0 32px;
+
+  .placeholder-canvas {
+    min-height: 520px;
+
+    @media (max-width: 1024px) {
+      min-height: 360px;
+    }
+  }
+}
+
+.slicer-mock {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--social-bg);
+
+  .slicer-label {
+    font-size: 11px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .slicer-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  button {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--text-h);
+    font-size: 13px;
+    font-family: var(--sans);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+
+    &:hover {
+      border-color: var(--accent-border);
+    }
+
+    &.is-active {
+      background: var(--accent-bg);
+      border-color: var(--accent-border);
+      color: var(--accent);
+    }
+  }
+}
+
 .chart-sticky {
   position: sticky;
   top: 6vh;
