@@ -1,4 +1,8 @@
 import './style.css'
+import { initCh1 } from './charts/ch1-trend.js'
+import { initCh2 } from './charts/ch2-states.js'
+import { initCh3 } from './charts/ch3-demographics.js'
+import { initCh4 } from './charts/ch4-roaduser.js'
 
 /* ====================================================================
    Scrollytelling — drive each chart-sticky from the active step
@@ -36,8 +40,22 @@ function initScrollytelling() {
   })
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initScrollytelling)
-} else {
+function initCharts() {
+  // Each chart owns its mount + data load; failures are isolated.
+  ;[initCh1, initCh2, initCh3, initCh4].forEach((fn) =>
+    Promise.resolve()
+      .then(() => fn())
+      .catch((err) => console.error(`${fn.name} failed:`, err))
+  )
+}
+
+function boot() {
   initScrollytelling()
+  initCharts()
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot)
+} else {
+  boot()
 }

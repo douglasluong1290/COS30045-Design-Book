@@ -1,0 +1,497 @@
+[
+  {
+    "state": "NSW",
+    "year": 2011,
+    "population": 7247.7
+  },
+  {
+    "state": "VIC",
+    "year": 2011,
+    "population": 5574.5
+  },
+  {
+    "state": "QLD",
+    "year": 2011,
+    "population": 4513.0
+  },
+  {
+    "state": "SA",
+    "year": 2011,
+    "population": 1645.0
+  },
+  {
+    "state": "WA",
+    "year": 2011,
+    "population": 2387.2
+  },
+  {
+    "state": "TAS",
+    "year": 2011,
+    "population": 511.7
+  },
+  {
+    "state": "NT",
+    "year": 2011,
+    "population": 232.4
+  },
+  {
+    "state": "ACT",
+    "year": 2011,
+    "population": 370.7
+  },
+  {
+    "state": "Australia",
+    "year": 2011,
+    "population": 22485.3
+  },
+  {
+    "state": "NSW",
+    "year": 2012,
+    "population": 7348.9
+  },
+  {
+    "state": "VIC",
+    "year": 2012,
+    "population": 5679.6
+  },
+  {
+    "state": "QLD",
+    "year": 2012,
+    "population": 4610.9
+  },
+  {
+    "state": "SA",
+    "year": 2012,
+    "population": 1662.2
+  },
+  {
+    "state": "WA",
+    "year": 2012,
+    "population": 2472.7
+  },
+  {
+    "state": "TAS",
+    "year": 2012,
+    "population": 512.4
+  },
+  {
+    "state": "NT",
+    "year": 2012,
+    "population": 236.9
+  },
+  {
+    "state": "ACT",
+    "year": 2012,
+    "population": 379.6
+  },
+  {
+    "state": "Australia",
+    "year": 2012,
+    "population": 22906.4
+  },
+  {
+    "state": "NSW",
+    "year": 2013,
+    "population": 7465.5
+  },
+  {
+    "state": "VIC",
+    "year": 2013,
+    "population": 5791.0
+  },
+  {
+    "state": "QLD",
+    "year": 2013,
+    "population": 4690.9
+  },
+  {
+    "state": "SA",
+    "year": 2013,
+    "population": 1677.3
+  },
+  {
+    "state": "WA",
+    "year": 2013,
+    "population": 2550.9
+  },
+  {
+    "state": "TAS",
+    "year": 2013,
+    "population": 514.0
+  },
+  {
+    "state": "NT",
+    "year": 2013,
+    "population": 242.6
+  },
+  {
+    "state": "ACT",
+    "year": 2013,
+    "population": 384.1
+  },
+  {
+    "state": "Australia",
+    "year": 2013,
+    "population": 23319.4
+  },
+  {
+    "state": "NSW",
+    "year": 2014,
+    "population": 7565.5
+  },
+  {
+    "state": "VIC",
+    "year": 2014,
+    "population": 5886.4
+  },
+  {
+    "state": "QLD",
+    "year": 2014,
+    "population": 4750.5
+  },
+  {
+    "state": "SA",
+    "year": 2014,
+    "population": 1691.5
+  },
+  {
+    "state": "WA",
+    "year": 2014,
+    "population": 2581.3
+  },
+  {
+    "state": "TAS",
+    "year": 2014,
+    "population": 515.2
+  },
+  {
+    "state": "NT",
+    "year": 2014,
+    "population": 244.3
+  },
+  {
+    "state": "ACT",
+    "year": 2014,
+    "population": 387.6
+  },
+  {
+    "state": "Australia",
+    "year": 2014,
+    "population": 23625.6
+  },
+  {
+    "state": "NSW",
+    "year": 2015,
+    "population": 7670.7
+  },
+  {
+    "state": "VIC",
+    "year": 2015,
+    "population": 5996.4
+  },
+  {
+    "state": "QLD",
+    "year": 2015,
+    "population": 4808.8
+  },
+  {
+    "state": "SA",
+    "year": 2015,
+    "population": 1702.8
+  },
+  {
+    "state": "WA",
+    "year": 2015,
+    "population": 2603.9
+  },
+  {
+    "state": "TAS",
+    "year": 2015,
+    "population": 517.4
+  },
+  {
+    "state": "NT",
+    "year": 2015,
+    "population": 244.0
+  },
+  {
+    "state": "ACT",
+    "year": 2015,
+    "population": 393.0
+  },
+  {
+    "state": "Australia",
+    "year": 2015,
+    "population": 23940.3
+  },
+  {
+    "state": "NSW",
+    "year": 2016,
+    "population": 7797.8
+  },
+  {
+    "state": "VIC",
+    "year": 2016,
+    "population": 6244.2
+  },
+  {
+    "state": "QLD",
+    "year": 2016,
+    "population": 4883.7
+  },
+  {
+    "state": "SA",
+    "year": 2016,
+    "population": 1717.0
+  },
+  {
+    "state": "WA",
+    "year": 2016,
+    "population": 2567.8
+  },
+  {
+    "state": "TAS",
+    "year": 2016,
+    "population": 519.1
+  },
+  {
+    "state": "NT",
+    "year": 2016,
+    "population": 245.0
+  },
+  {
+    "state": "ACT",
+    "year": 2016,
+    "population": 406.4
+  },
+  {
+    "state": "Australia",
+    "year": 2016,
+    "population": 24385.6
+  },
+  {
+    "state": "NSW",
+    "year": 2017,
+    "population": 7915.1
+  },
+  {
+    "state": "VIC",
+    "year": 2017,
+    "population": 6385.8
+  },
+  {
+    "state": "QLD",
+    "year": 2017,
+    "population": 4965.0
+  },
+  {
+    "state": "SA",
+    "year": 2017,
+    "population": 1728.1
+  },
+  {
+    "state": "WA",
+    "year": 2017,
+    "population": 2584.8
+  },
+  {
+    "state": "TAS",
+    "year": 2017,
+    "population": 524.7
+  },
+  {
+    "state": "NT",
+    "year": 2017,
+    "population": 246.7
+  },
+  {
+    "state": "ACT",
+    "year": 2017,
+    "population": 415.9
+  },
+  {
+    "state": "Australia",
+    "year": 2017,
+    "population": 24770.7
+  },
+  {
+    "state": "NSW",
+    "year": 2018,
+    "population": 8046.1
+  },
+  {
+    "state": "VIC",
+    "year": 2018,
+    "population": 6526.4
+  },
+  {
+    "state": "QLD",
+    "year": 2018,
+    "population": 5052.8
+  },
+  {
+    "state": "SA",
+    "year": 2018,
+    "population": 1742.7
+  },
+  {
+    "state": "WA",
+    "year": 2018,
+    "population": 2606.3
+  },
+  {
+    "state": "TAS",
+    "year": 2018,
+    "population": 531.5
+  },
+  {
+    "state": "NT",
+    "year": 2018,
+    "population": 245.9
+  },
+  {
+    "state": "ACT",
+    "year": 2018,
+    "population": 423.8
+  },
+  {
+    "state": "Australia",
+    "year": 2018,
+    "population": 25180.2
+  },
+  {
+    "state": "NSW",
+    "year": 2019,
+    "population": 8129.0
+  },
+  {
+    "state": "VIC",
+    "year": 2019,
+    "population": 6651.1
+  },
+  {
+    "state": "QLD",
+    "year": 2019,
+    "population": 5130.0
+  },
+  {
+    "state": "SA",
+    "year": 2019,
+    "population": 1759.2
+  },
+  {
+    "state": "WA",
+    "year": 2019,
+    "population": 2639.1
+  },
+  {
+    "state": "TAS",
+    "year": 2019,
+    "population": 537.0
+  },
+  {
+    "state": "NT",
+    "year": 2019,
+    "population": 244.8
+  },
+  {
+    "state": "ACT",
+    "year": 2019,
+    "population": 427.4
+  },
+  {
+    "state": "Australia",
+    "year": 2019,
+    "population": 25522.2
+  },
+  {
+    "state": "NSW",
+    "year": 2020,
+    "population": 8172.5
+  },
+  {
+    "state": "VIC",
+    "year": 2020,
+    "population": 6661.7
+  },
+  {
+    "state": "QLD",
+    "year": 2020,
+    "population": 5194.9
+  },
+  {
+    "state": "SA",
+    "year": 2020,
+    "population": 1770.8
+  },
+  {
+    "state": "WA",
+    "year": 2020,
+    "population": 2670.2
+  },
+  {
+    "state": "TAS",
+    "year": 2020,
+    "population": 541.5
+  },
+  {
+    "state": "NT",
+    "year": 2020,
+    "population": 246.6
+  },
+  {
+    "state": "ACT",
+    "year": 2020,
+    "population": 431.5
+  },
+  {
+    "state": "Australia",
+    "year": 2020,
+    "population": 25694.4
+  },
+  {
+    "state": "NSW",
+    "year": 2021,
+    "population": 8095.4
+  },
+  {
+    "state": "VIC",
+    "year": 2021,
+    "population": 6559.9
+  },
+  {
+    "state": "QLD",
+    "year": 2021,
+    "population": 5265.0
+  },
+  {
+    "state": "SA",
+    "year": 2021,
+    "population": 1806.6
+  },
+  {
+    "state": "WA",
+    "year": 2021,
+    "population": 2762.2
+  },
+  {
+    "state": "TAS",
+    "year": 2021,
+    "population": 569.8
+  },
+  {
+    "state": "NT",
+    "year": 2021,
+    "population": 249.3
+  },
+  {
+    "state": "ACT",
+    "year": 2021,
+    "population": 453.3
+  },
+  {
+    "state": "Australia",
+    "year": 2021,
+    "population": 25766.6
+  }
+]

@@ -1,0 +1,34 @@
+[
+  {
+    "state": "NSW",
+    "cases": 116060
+  },
+  {
+    "state": "VIC",
+    "cases": 107942
+  },
+  {
+    "state": "QLD",
+    "cases": 93967
+  },
+  {
+    "state": "WA",
+    "cases": 36985
+  },
+  {
+    "state": "SA",
+    "cases": 26868
+  },
+  {
+    "state": "TAS",
+    "cases": 7310
+  },
+  {
+    "state": "NT",
+    "cases": 7176
+  },
+  {
+    "state": "ACT",
+    "cases": 6985
+  }
+]

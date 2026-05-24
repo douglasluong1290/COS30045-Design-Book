@@ -1,0 +1,55 @@
+dataset used: transformed_datasets.xlsx
+
+charts' features:
+- chart1: line chart
+	- sheet used: publication
+	- background: dotted light gray grid
+	- x axis: year
+	- y axis: hospitalisation count
+	- legend: admission
+		- create the admission col using d3
+		- admission = 
+SWITCH(
+    TRUE(),
+    publication[Calendar year] = 2011, "Hospitalised injuries",
+
+    publication[Calendar year] >= 2012 &&
+    publication[Calendar year] <= 2016, "Change in admissions 2012",
+
+    publication[Calendar year] >= 2017, "Change in admissions 2017"
+)
+	- interaction: hover on the line intersecting with a year pop up a tooltip showing the year and case count
+
+- chart2: map chart
+	- sheet used: state
+	- map: Australia's states (according to the dataset)
+	- state: circle (size = sum of count of cases of the period)
+	- interaction: hovering on the circle will show a "see more" tooltip
+		- pressing on the circle -> pop to a line x bar chart
+		- line x bar chart: 
+			- line: count of cases throughout years
+			- bar: population of that year
+			- a back button on top left to return to the map chart
+		- note:
+			- VIC: change in admission in 2012 for counting cases
+			- NSW: same change in 2017
+			-> legend like chart 1, but only for these 2 states
+
+- chart3: clustered bar chart
+	- sheet used: publication
+	- filter: gender
+	- bars: sum of count of cases vs sum of bed days
+	- small multiples: age groups
+	- background: vertical dotted light gray line
+	- note:
+		- drop the missing group in the age group
+		- show label in the right end of the bar
+		- bar direction: horizontal (left -> right)
+
+- chart4: dumbbell bar chart
+	- sheet used: publication
+	- x axis: sum of count of cases vs sum of bed days
+	- y axis :road user
+	- background: dotted light gray grid
+	- include legend
+	- interaction: hover on the points will show a tooltip road user, count of cases, and count of bed days
