@@ -2,239 +2,304 @@ D3 CHART CODING PLAN — COS30045 Data Storytelling Page
 ========================================================
 Branch: claude/data-storytelling-page-IKWiT
 Source spec: charts_features.txt
-Stack: vanilla JS + Vite, D3 v7 only
+Stack: vanilla JS + Vite, D3 v7, SheetJS (xlsx) for the data loader
 
 ----------------------------------------------------------------
 0. WHAT WAS BUILT
 ----------------------------------------------------------------
-Four D3 chart modules under src/charts/, each mounting inside the
-existing .placeholder-canvas div of its chapter:
+A single data loader + four D3 chart modules, all orchestrated by
+main.js:
 
+    src/data/load-data.js              — opens xlsx, hands each chart its sheet
     src/charts/theme.js                — shared tokens + helpers
     src/charts/ch1-trend.js            — national line, phase-coloured
     src/charts/ch2-states.js           — map + click-drill (line × bar)
     src/charts/ch3-demographics.js     — small-multiples horizontal bars
     src/charts/ch4-roaduser.js         — dumbbell chart
 
-main.js boots scrollytelling first, then kicks off each chart in a
-try/catch so a single chart failure can't take the page down.
+main.js boots scrollytelling, calls the loader once, then passes the
+relevant sheets into each chart's init function. Each chart aggregates
+its own data from the raw rows.
 
 ----------------------------------------------------------------
-1. DATA PIPELINE
+1. DATA PIPELINE — single JavaScript loader
 ----------------------------------------------------------------
-One-shot Python converter:  scripts/build_data.py
-Re-run after any change to transformed_datasets.xlsx:
+The workbook is read in the browser at page load. No Python step, no
+pre-baked JSON.
 
-    python3 scripts/build_data.py
+Dependencies
+    npm install d3 xlsx
 
-Inputs:
-    thanh_analysis/datasets/transformed_datasets.xlsx
-        (sheets: publication, state, state_summary, population, ...)
-    public/data/au-states.geojson
-        (fetched once from tonywr71/GeoJson-Data, ~239 kB)
+Assets that must sit under public/ (Vite serves this directory at
+the base URL):
+    public/data/transformed_datasets.xlsx   (copied from thanh_analysis/)
+    public/data/au-states.geojson           (still required by chart 2)
 
-Outputs (public/data/):
-    national_trend.json       11 rows   [{ year, hospitalisations, admission }]
-    state_totals.json          8 rows   [{ state, cases }]
-    state_trend.json          88 rows   [{ state, year, cases, bed_days }]
-    population.json           99 rows   [{ state, year, population }]
-    age_sex.json              21 rows   [{ age_band, sex, cases, bed_days }]
-    road_user.json            12 rows   [{ road_user, cases, bed_days }]
+src/data/load-data.js — the only file that knows about the workbook:
 
-Two filter rules are applied at build-time (NOT at runtime):
-    - road_user.json drops every row where road_user = "Not applicable".
-      Mirrors the page-level filter in the final pbix.
-    - age_sex.json drops rows whose age_band reads "missing", "not
-      stated", or "unknown" (the missing-group rule from the spec).
+    import * as XLSX from 'xlsx'
+    import * as d3 from 'd3'
 
-Admission column for chart 1 is computed in Python with the same
-DAX rule shown in the spec:
-    year == 2011                          -> "Hospitalised injuries"
-    2012 <= year <= 2016                  -> "Change in admissions 2012"
-    year >= 2017                          -> "Change in admissions 2017"
+    /**
+     * Open the workbook once, parse every sheet into an array of
+     * objects. Each sheet is converted to a CSV string via SheetJS
+     * and then handed to d3.csvParse, so D3 owns the row-parsing
+     * end of the pipeline and chart modules speak D3-native data.
+     *
+     * Returns { sheetName: [row, row, ...] }
+     */
+    export async function loadDatasets(
+      path = 'data/transformed_datasets.xlsx'
+    ) {
+      const buf = await fetch(path).then((r) => r.arrayBuffer())
+      const wb = XLSX.read(buf, { type: 'array' })
+      const sheets = {}
+      for (const name of wb.SheetNames) {
+        const csv = XLSX.utils.sheet_to_csv(wb.Sheets[name])
+        // d3.autoType coerces numeric columns so chart aggregations can
+        // drop the +d['Count of cases'] dance.
+        sheets[name] = d3.csvParse(csv, d3.autoType)
+      }
+      return sheets
+    }
+
+Why d3.csvParse and not d3.csv
+    d3.csv() fetches a CSV from a URL — fine when CSVs exist as files.
+    Here SheetJS hands us CSV strings already in memory, so the
+    fetch-the-CSV step is redundant. d3.csvParse() runs the same row
+    parser without a network round-trip. Net result: the loader makes
+    ONE network request (the xlsx itself) regardless of how many
+    sheets the workbook contains.
+
+Why a single loader file
+    - The xlsx is fetched once per page load, not 6× (one per chart).
+    - Each chart gets a clean, pre-parsed array — no error-handling
+      boilerplate is duplicated.
+    - Swapping the source workbook is a one-line change.
+
+Per-chart filtering — now lives next to the chart, not at build time.
+Each chart receives the raw sheet and filters before aggregating:
+    - chart 4 drops rows where road_user === "Not applicable".
+    - chart 3 drops rows whose age_band reads
+                                "missing" / "not stated" / "unknown".
+    - chart 1 computes the admission category inside ch1-trend.js
+      using the spec's SWITCH rule on Calendar year.
 
 ----------------------------------------------------------------
 2. SHARED MODULE — src/charts/theme.js
 ----------------------------------------------------------------
-- colors:        read from CSS custom properties at runtime, so the
-                 charts inherit the page's dark-mode palette automatically.
-- phasePalette:  three-tone admission palette keyed by category label;
-                 reused by ch1 and the VIC/NSW line in ch2's drill view.
-- fmt:           d3.format wrappers — fmt.int (comma) + fmt.compact (1.2M / 250k).
-- mountSvg:      empties .placeholder-canvas, mounts a responsive
-                 viewBox-based <svg>, returns the d3 selection.
-- drawGrid:      dotted-light-gray grid (vertical + horizontal) tuned
-                 to the spec ("dotted light gray grid" everywhere).
-- makeTooltip:   floating div appended to <body>, position: fixed,
-                 follows cursor; .show(html, ev) / .move / .hide.
+Exports
+    colors          — read from CSS custom properties at runtime, so
+                      the charts inherit dark mode automatically.
+    phasePalette    — three-tone admission palette keyed by category
+                      label; reused by ch1 and the VIC/NSW drill line
+                      in ch2.
+    fmt             — d3.format wrappers (int with commas, compact
+                      1.2M / 250k).
+    mountSvg        — empties .placeholder-canvas, mounts a responsive
+                      viewBox-based <svg>, returns the d3 selection.
+    drawGrid        — dotted-light-gray grid (vertical + horizontal),
+                      matches the spec's "dotted light gray grid".
+    makeTooltip     — floating div attached to <body>, position: fixed,
+                      follows the cursor. .show(html, ev) / .move / .hide.
 
 ----------------------------------------------------------------
 3. CHART 1 — National line  (#chart-1-trend)
 ----------------------------------------------------------------
 File:    src/charts/ch1-trend.js
 Sheet:   publication
+Signature: initCh1(publicationRows)
+
+Aggregation inside the chart
+    const byYear = d3.rollup(
+      publicationRows,
+      (v) => d3.sum(v, (r) => r.Hospitalisations),
+      (r) => r['Calendar year']
+    )
+    // -> Map<year, hospitalisations>
+    // then map into [{ year, hospitalisations, admission }] applying
+    // the SWITCH (2011, 2012–2016, ≥2017) for the admission column.
 
 Render
-    Annotated line over years, segments coloured by admission category:
-    grey (2011) → accent (2012–2016) → amber (2017–2021).
-    Dotted-grey grid background, both axes, axis titles, dot per year.
+    Phase-coloured line segments (3 colours from phasePalette),
+    dotted-grey grid, both axes with titles, dot per year.
 
 Interaction
-    Per spec: hover on the line/year intersection pops a tooltip with
-    year + case count. Implementation = invisible vertical hit-rects
-    one per year (snap-to-year behaviour, fewer false hovers than
-    bare-point hits). Hovered point gets r 5 → 8.
+    Invisible vertical hit-rect per year → tooltip with year + cases.
+    Hovered point grows r 5 → 8.
 
 Legend
-    Horizontal swatch + label, drawn from phasePalette in the SVG's
-    top-left margin — matches the in-PBI legend by reusing the SAME
-    admission categories the data was tagged with at build time.
+    Drawn in the SVG top-left margin from phasePalette.
 
 ----------------------------------------------------------------
 4. CHART 2 — Map + click-drill  (#chart-2-states)
 ----------------------------------------------------------------
 File:    src/charts/ch2-states.js
 Sheets:  state_summary (totals + trend), population (drill bar)
-Geo:     public/data/au-states.geojson (8 features)
+Geo:     public/data/au-states.geojson (loaded by main.js, injected)
+Signature: initCh2(stateSummary, populationRows, geo)
+
+Aggregation inside the chart
+    // per-state totals across years (for bubble size)
+    const totals = d3.rollups(
+      stateSummary,
+      (v) => d3.sum(v, (r) => r['count of cases']),
+      (r) => r['state or territory']
+    )
+    // per-state time-series for the drill line
+    // population rows are passed through unchanged
 
 Render — MAP layer
-    GeoJSON drawn with d3.geoMercator().fitSize(...) so it scales to
-    the SVG. Each state polygon = accent-bg fill + border stroke.
-    Per-state bubble at d3.geoCentroid(feature), radius scaled by
-    sqrt(cases). Label = state code (NSW / VIC / ...).
+    GeoMercator().fitSize() on the 8 features, polygons in accent-bg
+    fill + border stroke. State bubble at d3.geoCentroid(feature),
+    radius via scaleSqrt, accent fill + state-code label.
 
-Interaction — MAP layer
-    - Hover bubble → tooltip "TOTAL <cases> · click to see more →".
-    - Click bubble → swaps mapLayer.style('display') to 'none' and
-      reveals drillLayer.
+Render — DRILL layer
+    Triggered by a bubble click — swaps mapLayer.style('display') to
+    'none' and shows a back-button + line × bar combo:
+        line = cases over years (left Y axis)
+        bar  = population over years (right Y axis, behind the line)
+    For VIC: line segments are phase-coloured with the 2012 cutover.
+    For NSW: phase-coloured with the 2017 cutover.
+    Other states: single accent-coloured line.
+    A footer legend is added only for VIC/NSW (matches the spec).
 
-Render — DRILL layer (line × bar combo)
-    - Back button top-left ("← Back to map"); click closes drill.
-    - Title = full state name.
-    - X axis: shared year scale.
-    - Left Y axis: cases (accent line).
-    - Right Y axis: population (muted bar, fill 0.35 opacity).
-    - Population is drawn FIRST (z-order behind), then the cases line.
-    - For VIC and NSW, the cases line is rendered as three segments
-      using phasePalette — VIC switches at 2012, NSW switches at 2017
-      (matches the spec's "change in admission" note).
-    - Bottom legend shown only when the state is VIC or NSW.
-
-Interaction — DRILL layer
-    Hover each population bar / case dot → tooltip with year + value.
-
-Why this design
-    Two SVG <g> layers + display toggle is the simplest state machine
-    that still allows a smooth back-and-forth. No router, no global
-    state — encapsulated entirely inside initCh2().
+Interaction
+    Hover bubble → tooltip "total cases · click to see more →".
+    In the drill: hover population bar / case dot → year + value.
 
 ----------------------------------------------------------------
 5. CHART 3 — Small-multiples horizontal bars  (#chart-3-demographics)
 ----------------------------------------------------------------
 File:    src/charts/ch3-demographics.js
-Sheet:   publication → age_sex.json (aggregated)
+Sheet:   publication
+Signature: initCh3(publicationRows)
+
+Pre-aggregation inside the chart
+    const cleaned = publicationRows.filter(
+      (r) => !/missing|not stated|unknown/i.test(r['Age group'] || '')
+    )
+    // -> d3.rollups grouped by (age band, sex) summing
+    //    Count of cases + Bed days.
 
 Render
-    One panel per age band, stacked vertically. Each panel has two
-    side-by-side horizontal bars:
-        left  = cases   (accent)
+    One panel per age band, stacked top to bottom. Each panel has
+    two side-by-side horizontal bars:
+        left  = cases    (accent)
         right = bed days (muted)
-    Value labels sit at the right end of each bar (per spec).
-    Vertical dotted grid lines on every panel (per spec).
-    Age label sits to the left of the row (anchored end).
+    Value label at the right end of each bar (per spec). Vertical
+    dotted grid in each panel. Age label anchored to the left.
+    AGE_ORDER hardcoded ascending — panels never sort alphabetically.
 
-Slicer (PRIMARY interaction)
-    Drawn inside the SVG above the panels: 3 pill buttons —
-    [All] [Female] [Male]. Click → updates activeSex, re-aggregates
-    via d3.rollups, and re-renders with d3.transition().duration(450)
-    so bars morph rather than redraw. Pill style toggles via fill +
-    stroke from accent / accent-bg.
-
-Notes
-    - Missing age groups are dropped at BUILD time (build_data.py)
-      so the chart never sees them.
-    - AGE_ORDER is hardcoded ascending so the panels never sort
-      alphabetically.
-    - The bed-days scale is independent of the cases scale (each
-      panel column has its own xLinear) — this is what makes the
-      bar lengths comparable across age bands within each metric.
+Slicer (primary interaction)
+    In-SVG pill buttons above the panels: [All] [Female] [Male].
+    Click → re-aggregate via d3.rollups → d3.transition(450) on bar
+    widths + label positions.
 
 ----------------------------------------------------------------
 6. CHART 4 — Road-user dumbbell  (#chart-4-mechanism)
 ----------------------------------------------------------------
 File:    src/charts/ch4-roaduser.js
-Sheet:   publication → road_user.json (already filtered)
+Sheet:   publication
+Signature: initCh4(publicationRows)
+
+Baked-in filter — first line inside the chart
+    const filtered = publicationRows.filter(
+      (r) => String(r['Road user']).trim().toLowerCase() !== 'not applicable'
+    )
+    // Not exposed as a UI toggle. Mirrors the page-level filter
+    // in the final pbix.
+
+Aggregation
+    d3.rollups(filtered,
+      (v) => ({
+        cases: d3.sum(v, (r) => r['Count of cases']),
+        bed_days: d3.sum(v, (r) => r['Bed days']),
+      }),
+      (r) => r['Road user']
+    )
 
 Render
-    Y axis = road user (band scale), ordered by cases descending.
-    X axis = a single linear scale spanning max(cases, bed_days),
-    so the two dots share one ruler. Dotted vertical grid lines.
-
-Per row
-    - <line> from the smaller of (cases, bed_days) to the larger,
-      stroke = border color.
-    - <circle> at cases (accent fill, r 8).
-    - <circle> at bed_days (muted fill, r 8).
-    - Value labels next to each dot, anchored start/end based on
-      whichever value is rightmost.
+    Y axis = road user (band scale, ordered by cases descending).
+    X axis = shared linear scale spanning max(cases, bed_days).
+    Per row: connecting <line>, accent circle at cases, muted circle
+    at bed days, value labels next to each dot. Dotted vertical grid.
 
 Legend
-    Top-left, two-item: "Count of cases" (accent dot) and "Bed days"
-    (muted dot).
+    Top-left, two-item: accent dot = cases, muted dot = bed days.
 
 Interaction
-    Whole row gets a mouseenter / leave: both circles transition
-    r 8 → 11; tooltip shows road user, cases, bed days, bed days/case.
-
-Baked-in filter
-    Explicitly verified at module load: any "Not applicable" rows
-    that leak through will console.warn. The filter is enforced at
-    the data layer (build_data.py), NOT exposed as a UI control,
-    mirroring the page-level filter in the final pbix.
+    Whole row → both circles r 8 → 11 on hover; tooltip shows road
+    user, cases, bed days, and bed-days-per-case ratio.
 
 ----------------------------------------------------------------
 7. WIRE-UP — src/main.js
 ----------------------------------------------------------------
+    import './style.css'
+    import { loadDatasets } from './data/load-data.js'
     import { initCh1 } from './charts/ch1-trend.js'
     import { initCh2 } from './charts/ch2-states.js'
     import { initCh3 } from './charts/ch3-demographics.js'
     import { initCh4 } from './charts/ch4-roaduser.js'
 
-    function initCharts() {
-      [initCh1, initCh2, initCh3, initCh4].forEach((fn) =>
-        Promise.resolve().then(() => fn()).catch(console.error)
-      )
+    async function initCharts() {
+      try {
+        const [sheets, geo] = await Promise.all([
+          loadDatasets(),
+          fetch('data/au-states.geojson').then((r) => r.json()),
+        ])
+        initCh1(sheets.publication)
+        initCh2(sheets.state_summary, sheets.population, geo)
+        initCh3(sheets.publication)
+        initCh4(sheets.publication)
+      } catch (err) {
+        console.error('chart bootstrap failed:', err)
+      }
     }
 
-The existing scrollytelling glue (IntersectionObserver + stepchange
-CustomEvent) is preserved untouched. The current chart modules do
-not yet listen to stepchange — they render once on load. When step-
-driven behaviour is wanted, each module can hook in via:
+    function boot() {
+      initScrollytelling()
+      initCharts()
+    }
 
-    const sticky = document.querySelector('#chart-1-trend').closest('.chart-sticky')
-    sticky.addEventListener('stepchange', (e) => updateStep(+e.detail.step))
+main.js owns the orchestration. Each chart file is purely about
+rendering — it receives parsed rows and never touches the network.
+
+The existing scrollytelling glue (IntersectionObserver + stepchange
+CustomEvent) is preserved untouched. When step-driven behaviour is
+wanted, each module can hook in via:
+
+    const sticky = document.querySelector('#chart-1-trend')
+                     .closest('.chart-sticky')
+    sticky.addEventListener('stepchange', (e) => onStep(+e.detail.step))
 
 ----------------------------------------------------------------
 8. STYLING NOTES
 ----------------------------------------------------------------
-- All dimensions come from CSS variables, so dark mode JUST WORKS.
-  No JS theming logic required.
+- All dimensions read from CSS variables, so dark mode JUST WORKS.
+  No JS theming logic needed.
 - The .chart-placeholder containers use a hatched canvas in CSS for
   the "no chart yet" state. mountSvg() resets the .placeholder-canvas
   to a plain block so the hatching disappears the moment a chart
   mounts.
 
 ----------------------------------------------------------------
-9. RE-BUILDING / RUNNING
+9. RUNNING
 ----------------------------------------------------------------
     npm install
-    python3 scripts/build_data.py        # rebuild public/data/*.json
-    npm run dev                           # Vite, base = /cos30045/.../design-book/
-    npm run build                         # writes dist/
+    npm run dev
+    npm run build
+
+No Python step. transformed_datasets.xlsx must sit under
+public/data/ so Vite serves it; au-states.geojson stays alongside.
+
+If the source workbook changes, just refresh the page — the loader
+re-parses on every load. The browser caches the xlsx the same way
+it caches any other static asset.
 
 The Vite base path is /cos30045/s104358130/design-book (Swinburne
-Mercury deployment). All fetches inside the chart modules use plain
-relative paths (data/foo.json), so the base is applied automatically.
+Mercury deployment). All fetches inside the loader use plain
+relative paths (data/foo.xlsx), so the base is applied automatically.
 
 ----------------------------------------------------------------
 10. WHAT IS NOT YET WIRED
@@ -245,5 +310,5 @@ relative paths (data/foo.json), so the base is applied automatically.
   spotlight, chapter 4 view morph). The CustomEvent infrastructure
   is in place — adding stepchange listeners per chart is a follow-up.
 - Per-capita normalisation for chart 2 — the yearly population is
-  available in population.json but currently only used in the drill
-  bar, not as a divisor.
+  already in scope (population sheet is passed to initCh2), but
+  currently only used in the drill bar, not as a divisor.
