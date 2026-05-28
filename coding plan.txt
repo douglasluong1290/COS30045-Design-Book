@@ -10,6 +10,9 @@ charts
   |_ ch3_chart.js
   |_ ch4_chart.js
 
+charts' location in html file:
+- under .placeholder_canvas
+
 charts' information:
 - read the charts' descriptions and requirements in the file "chart's features.txt"
 
