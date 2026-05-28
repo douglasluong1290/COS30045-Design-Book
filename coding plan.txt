@@ -16,6 +16,9 @@ charts' location in html file:
 charts' information:
 - read the charts' descriptions and requirements in the file "chart's features.txt"
 
+main.js:
+- call load_charts.js
+
 load_data.js:
 - read the transformed_dataset.xlsx file, parse all the sheets under csv format with its sheet name
 - return the loaded sheets
