@@ -79,35 +79,12 @@
             <figure class="chart-placeholder" id="chart-1-trend" data-chart="annotated-line">
               <figcaption class="placeholder-caption">Chart 01 · Annotated national trend line</figcaption>
               <div class="placeholder-canvas" aria-label="Chart placeholder">
-                <p class="placeholder-hint">D3 placeholder — annotated line bound to <code>publification.xlsx</code></p>
+                
               </div>
-              <details class="placeholder-spec">
-                <summary>How to build this chart in D3</summary>
-                <div class="spec-body">
-                  <p><strong>Visual:</strong> Single-line annotated time-series with three coloured background bands (Before / During / After lockdown).</p>
-                  <p><strong>Dataset:</strong> <code>thanh_analysis/datasets/publification.xlsx</code> — aggregate the two 6-monthly rows into one annual total per year.</p>
-                  <ul class="spec-list">
-                    <li><strong>X axis:</strong> <code>d3.scaleTime()</code> over calendar year 2011–2021.</li>
-                    <li><strong>Y axis:</strong> <code>d3.scaleLinear()</code> on annual <code>count of cases excluding died in hospitals within 30 days</code>. Truncate (e.g. 15k–21k) so the trend reads.</li>
-                    <li><strong>Line:</strong> <code>d3.line().curve(d3.curveMonotoneX)</code> in <code>var(--accent)</code>.</li>
-                    <li><strong>Lockdown bands:</strong> three <code>&lt;rect&gt;</code> backgrounds — 2011–2019 neutral, 2020 amber, 2021 recovery tone.</li>
-                  </ul>
-                  <p><strong>Scrollytelling — react to <code>data-active-step</code>:</strong></p>
-                  <ul class="spec-list">
-                    <li><code>step="1"</code>: render only the pre-pandemic segment (2011–2019). Hide post-2019 line. Annotate the +19% delta.</li>
-                    <li><code>step="2"</code>: extend the line to 2020. Drop a vertical guide at 2020, label the trough, fade the amber band in.</li>
-                    <li><code>step="3"</code>: extend to 2021, fade in the recovery band, drop the 2021 "record high" callout.</li>
-                    <li>Use <code>d3.transition().duration(600)</code> between steps so the chart morphs, doesn't redraw.</li>
-                  </ul>
-                  <p><strong>Filters:</strong> none — this chart is intentionally an unfiltered national overview.</p>
-                </div>
-              </details>
             </figure>
           </div>
 
         </div>
-
-        <p class="datasets-used"><span>Datasets used:</span> <code>publification.xlsx</code></p>
       </section>
 
       <div class="ticks"></div>
@@ -170,38 +147,13 @@
 
           <div class="chart-sticky">
             <figure class="chart-placeholder" id="chart-2-states" data-chart="small-multiples-with-pop">
-              <figcaption class="placeholder-caption">Chart 02 · State small-multiples with 2021 population column</figcaption>
+              <figcaption class="placeholder-caption">Chart 02 · Hospitalised cases by state, 2011–2021</figcaption>
               <div class="placeholder-canvas placeholder-canvas--grid" aria-label="Chart placeholder">
-                <p class="placeholder-hint">8 panels — one per state/territory — sharing a 2011–2021 X axis</p>
               </div>
-              <details class="placeholder-spec">
-                <summary>How to build this chart in D3</summary>
-                <div class="spec-body">
-                  <p><strong>Visual:</strong> 8-panel small-multiples grid. Each panel = one state. Each panel: a 2011–2021 line of annual case counts plus a thin vertical bar pinned to the right edge representing 2021 population — the visual denominator.</p>
-                  <p><strong>Datasets:</strong> <code>state_territory.xlsx</code> (group 6-monthly rows per year via <code>d3.rollup</code>) joined to <code>population_2021.xlsx</code> on state name.</p>
-                  <ul class="spec-list">
-                    <li><strong>Panel layout:</strong> CSS grid 4 cols × 2 rows. Order by 2021 case count <em>descending</em> — the ordering is itself a finding.</li>
-                    <li><strong>Within-panel X scale:</strong> shared 2011–2021 time scale so panels are comparable.</li>
-                    <li><strong>Within-panel Y scale:</strong> two options — (i) per-panel scale with a clearly labelled secondary axis for the population bar; or (ii) index every value to its own 2011 = 100 baseline.</li>
-                    <li><strong>Encoding:</strong> line in <code>var(--accent)</code>; population bar in a muted neutral.</li>
-                  </ul>
-                  <p><strong>Scrollytelling — react to <code>data-active-step</code>:</strong></p>
-                  <ul class="spec-list">
-                    <li><code>step="1"</code>: all 8 panels at full opacity. Population bar hidden. Neutral palette.</li>
-                    <li><code>step="2"</code>: spotlight VIC + NSW panels (opacity 1). Other panels drop to opacity 0.25. Draw a dashed marker at 2018 in both spotlit panels.</li>
-                    <li><code>step="3"</code>: spotlight QLD only. Annotate the +65% delta with a bracket.</li>
-                    <li><code>step="4"</code>: all panels back to full opacity. Fade in the population reference column. Highlight NT — short line, even shorter population bar.</li>
-                    <li>Each transition uses <code>d3.transition().duration(500)</code>.</li>
-                  </ul>
-                  <p><strong>Filters / controls:</strong> raw counts vs indexed-to-2011 toggle, population column on/off toggle.</p>
-                </div>
-              </details>
             </figure>
           </div>
 
         </div>
-
-        <p class="datasets-used"><span>Datasets used:</span> <code>state_territory.xlsx</code> · <code>population_2021.xlsx</code></p>
       </section>
 
       <div class="ticks"></div>
@@ -262,31 +214,11 @@
             <figure class="chart-placeholder" id="chart-3-demographics" data-chart="age-sex-multi-view">
               <figcaption class="placeholder-caption">Chart 03 · Age × sex (view morphs per step)</figcaption>
               <div class="placeholder-canvas" aria-label="Chart placeholder">
-                <p class="placeholder-hint">Single sticky panel that morphs between grouped-bar and scatter views</p>
               </div>
-              <details class="placeholder-spec">
-                <summary>How to build this chart in D3</summary>
-                <div class="spec-body">
-                  <p><strong>Visual:</strong> One panel that morphs between two views. View A: grouped bar (age band × sex). View B: volume-vs-severity scatter (one bubble per age band).</p>
-                  <p><strong>Datasets:</strong> <code>state_territory_age.xlsx</code> + <code>state_territory_sex.xlsx</code> joined on (state, year). <code>publification.xlsx</code> provides the bed-days denominator for severity. Replace <code>n.p.</code> with <code>null</code>; render suppressed cells as hatched bars/points with a tooltip.</p>
-                  <p><strong>Scrollytelling — react to <code>data-active-step</code>:</strong></p>
-                  <ul class="spec-list">
-                    <li><code>step="1"</code>: <strong>view A (grouped bars)</strong>. Both sexes neutral. Highlight the 40–64 age group (bring to full opacity, others to 0.4).</li>
-                    <li><code>step="2"</code>: morph to <strong>view B (scatter)</strong> — X = case count, Y = bed-days/case, bubble radius = total bed days. Highlight the 75+ bubble in <code>var(--accent)</code>, draw a label line.</li>
-                    <li><code>step="3"</code>: morph back to <strong>view A</strong>, now split-coloured by sex. Add a 53% / 47% legend bar above the chart. Highlight the female bars across all age groups.</li>
-                    <li><code>step="4"</code>: keep view A but overlay a faint scatter (severity) ghost so both stories sit in one frame; render a small text inset summarising the cross.</li>
-                    <li>Use <code>d3.transition()</code> for shape morphs; for the bar→scatter switch, interpolate bar tops to bubble centres so the transition is legible.</li>
-                  </ul>
-                  <p><strong>Filters / controls:</strong> state dropdown (default all), year range slider, raw vs share-of-total toggle.</p>
-                  <p><strong>Avoid:</strong> default pink/blue sex palette; use <code>var(--accent)</code> against a neutral.</p>
-                </div>
-              </details>
             </figure>
           </div>
 
         </div>
-
-        <p class="datasets-used"><span>Datasets used:</span> <code>state_territory_age.xlsx</code> · <code>state_territory_sex.xlsx</code> · <code>publification.xlsx</code></p>
       </section>
 
       <div class="ticks"></div>
@@ -347,30 +279,11 @@
             <figure class="chart-placeholder" id="chart-4-mechanism" data-chart="roaduser-counterparty">
               <figcaption class="placeholder-caption">Chart 04 · Road user bubble + counterparty stack (morphs per step)</figcaption>
               <div class="placeholder-canvas" aria-label="Chart placeholder">
-                <p class="placeholder-hint">Sticky panel that switches between bubble and stacked-bar views</p>
               </div>
-              <details class="placeholder-spec">
-                <summary>How to build this chart in D3</summary>
-                <div class="spec-body">
-                  <p><strong>Visual:</strong> One sticky panel containing two interchangeable views. View A: bubble chart of road user types (X = cases, Y = bed-days/case, radius = total bed days). View B: 100% stacked horizontal bar — counterparty composition per state.</p>
-                  <p><strong>Datasets:</strong> <code>state_territory_road.xlsx</code> + <code>state_territory_counterparty.xlsx</code> + <code>publification.xlsx</code> for the bed-days denominator. Replace <code>n.p.</code> with <code>null</code>.</p>
-                  <p><strong>Scrollytelling — react to <code>data-active-step</code>:</strong></p>
-                  <ul class="spec-list">
-                    <li><code>step="1"</code>: view A. Highlight the <em>car driver</em> bubble (far right on X, low on Y). Others to 0.4 opacity.</li>
-                    <li><code>step="2"</code>: view A. Highlight the <em>pedestrian</em> and <em>motorcyclist</em> bubbles (high Y). Animate a Y-axis sort line so the severity ranking is obvious.</li>
-                    <li><code>step="3"</code>: morph to view B. Stack categories ordered by counterparty share descending. Pull "non-collision transport accident" out as the accent-coloured slice; all other categories sit in desaturated greys.</li>
-                    <li><code>step="4"</code>: keep view B. Sort the Y axis so NT sits at the top and rural-QLD next; emphasise their non-collision slice; dim metropolitan states.</li>
-                  </ul>
-                  <p><strong>Generators:</strong> view A — <code>d3.scaleSqrt</code> for radius. View B — <code>d3.stack().offset(d3.stackOffsetExpand)</code>.</p>
-                  <p><strong>Filters / controls:</strong> state dropdown (view A only), year range slider, optional sex/age cross-filter that links forward to Chapter 5.</p>
-                </div>
-              </details>
             </figure>
           </div>
 
         </div>
-
-        <p class="datasets-used"><span>Datasets used:</span> <code>state_territory_road.xlsx</code> · <code>state_territory_counterparty.xlsx</code> · <code>publification.xlsx</code></p>
       </section>
 
       <div class="ticks"></div>
@@ -425,34 +338,11 @@
             <figure class="chart-placeholder" id="chart-5-heatmap" data-chart="state-roaduser-heatmap">
               <figcaption class="placeholder-caption">Chart 05 · State × road-user heatmap with risk-profile card</figcaption>
               <div class="placeholder-canvas placeholder-canvas--tall" aria-label="Chart placeholder">
-                <p class="placeholder-hint">Heatmap + dynamic risk-profile side card</p>
               </div>
-              <details class="placeholder-spec">
-                <summary>How to build this chart in D3</summary>
-                <div class="spec-body">
-                  <p><strong>Visual:</strong> Two-pane composition. Left: matrix heatmap — rows are states, columns are road user types, cell colour encodes either cases or bed-days-per-case. Right: dynamic "risk profile" summary card that updates with the active step.</p>
-                  <p><strong>Datasets:</strong> all six — joined on state and year. <code>publification.xlsx</code> drives the bed-days denominator.</p>
-                  <ul class="spec-list">
-                    <li><strong>Colour scale:</strong> <code>d3.scaleSequential(d3.interpolateMagma)</code> or similar perceptually uniform ramp; legend above the matrix.</li>
-                    <li><strong>Row order:</strong> states sorted by the active metric descending. Don't sort alphabetically.</li>
-                    <li><strong>Column order:</strong> road users ordered by severity ranking from Chapter 4.</li>
-                  </ul>
-                  <p><strong>Scrollytelling — react to <code>data-active-step</code>:</strong></p>
-                  <ul class="spec-list">
-                    <li><code>step="1"</code>: metric = cases. Show the full matrix. Right-pane card empty / placeholder ("Hover a cell to read the profile").</li>
-                    <li><code>step="2"</code>: metric stays = cases. Spotlight the NT × motorcyclist and QLD × driver cells. Right-pane card auto-populates with the highest-volume profile.</li>
-                    <li><code>step="3"</code>: metric flips to bed-days/case. Re-sort rows. Spotlight 75+ pedestrian and 75+ passenger cells (if cross-filter is engaged) or simply pedestrian/passenger columns. Right-pane card switches to the severity narrative.</li>
-                  </ul>
-                  <p><strong>Filters / controls:</strong> metric toggle, year range slider, age band multi-select (default 40–64 + 75+), sex toggle.</p>
-                  <p><strong>Caveat strip:</strong> persistent text band along the bottom of the chart — "Raw counts. Population not normalised. <code>n.p.</code> suppressed."</p>
-                </div>
-              </details>
             </figure>
           </div>
 
         </div>
-
-        <p class="datasets-used"><span>Datasets used:</span> all six datasets</p>
       </section>
 
       <div class="ticks"></div>
@@ -468,21 +358,8 @@
             large in absolute terms. NT and TAS figures are contextualised visually
             (Chapter 2's population column, Chapter 5's caveat strip).
           </li>
-          <li>
-            <strong>2021-only population data.</strong> Any per-capita framing is an
-            approximation across 2011–2021 — Queensland in particular grew fast, so part
-            of its +65% rise reflects population growth, not worsening safety.
-          </li>
-          <li>
-            <strong>Suppressed cells (<code>n.p.</code>).</strong> The age and road-user
-            files suppress small-count combinations, mostly in ACT and NT. We render
-            them as hatched cells rather than dropping them silently.
-          </li>
-          <li>
-            <strong>Lockdown framing.</strong> "During lockdown = 2020" is a
-            simplification — restrictions varied sharply by state. Honest at national
-            level (Chapter 1) but not carried into state comparisons.
-          </li>
+
+
         </ul>
       </section>
 

@@ -1,0 +1,35 @@
+folder structure:
+main.js
+charts
+|_ load_charts.js
+|_ load_data.js
+|_ charts
+  |_ constants.js
+  |_ ch1_chart.js
+  |_ ch2_chart.js
+  |_ ch3_chart.js
+  |_ ch4_chart.js
+
+charts' location in html file:
+- under .placeholder_canvas
+
+charts' information:
+- read the charts' descriptions and requirements in the file "chart's features.txt"
+
+main.js:
+- call load_charts.js
+
+load_data.js:
+- read the transformed_dataset.xlsx file, parse all the sheets under csv format with its sheet name
+- return the loaded sheets
+
+load_charts.js:
+- call load_data.js to get the neccessary datasets, pass the appropriate dataset to the charting function of each corresponding chart
+
+constants.js:
+- contain shared variables between charts
+
+ch1 - 4_chart.js:
+- a load function that takes in the csv data, parse, and perform transformation on columns if neccessary
+- a charting function that receive the transformed data and perform charting
+- charting must be done with d3js library only (only use the support of other libraries if d3 only is not possible)

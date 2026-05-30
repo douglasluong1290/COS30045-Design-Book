@@ -1,4 +1,5 @@
 import './style.css'
+import { loadCharts } from './charts/load_charts.js'
 
 /* ====================================================================
    Scrollytelling — drive each chart-sticky from the active step
@@ -27,7 +28,10 @@ function initScrollytelling() {
           )
         })
       },
-      { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+      // Steps are visually positioned beneath a 55vh sticky chart, so
+      // the focus band needs to sit in the lower portion of the viewport
+      // (~70–90% from the top).
+      { rootMargin: '-70% 0px -10% 0px', threshold: 0 }
     )
 
     steps.forEach((step) => observer.observe(step))
@@ -36,8 +40,13 @@ function initScrollytelling() {
   })
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initScrollytelling)
-} else {
+function boot() {
   initScrollytelling()
+  loadCharts()
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot)
+} else {
+  boot()
 }
