@@ -1,4 +1,5 @@
 import './style.css'
+import { loadCharts } from './charts/load_charts.js'
 
 /* ====================================================================
    Scrollytelling — drive each chart-sticky from the active step
@@ -38,6 +39,7 @@ function initScrollytelling() {
 
 function boot() {
   initScrollytelling()
+  loadCharts()
 }
 
 if (document.readyState === 'loading') {
