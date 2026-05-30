@@ -15,8 +15,8 @@
 import * as d3 from 'd3'
 import { COLORS, fmt, makeTooltip, mountSvg } from './constants.js'
 
-const W = 920
-const H = 580
+const W = 1300
+const H = 700
 const M = { top: 70, right: 140, bottom: 50, left: 220 }
 const IW = W - M.left - M.right
 const IH = H - M.top - M.bottom
@@ -47,7 +47,10 @@ export function chart(data) {
   if (!root) return
 
   const svg = mountSvg(root, { width: W, height: H })
-  const g = svg.append('g').attr('transform', `translate(${M.left},${M.top})`)
+  // center the chart group horizontally within the SVG by using the
+  // midpoint of the left/right margins, and apply the top margin as before
+  const centerX = (M.left + M.right) / 2
+  const g = svg.append('g').attr('transform', `translate(${centerX},${M.top})`)
   const tooltip = makeTooltip()
 
   const y = d3
@@ -80,9 +83,17 @@ export function chart(data) {
     .call(d3.axisBottom(x).ticks(6).tickFormat(fmt.compact))
     .call((s) => s.selectAll('text').attr('fill', COLORS.text))
     .call((s) => s.selectAll('line, path').attr('stroke', COLORS.border))
+  // draw the y-axis and shift only the label text left by 30px so the
+  // ticks and axis path remain in their original positions
   g.append('g')
     .call(d3.axisLeft(y))
-    .call((s) => s.selectAll('text').attr('fill', COLORS.textH).style('font-size', '12px'))
+    .call((s) =>
+      s
+        .selectAll('text')
+        .attr('fill', COLORS.textH)
+        .style('font-size', '12px')
+        .attr('transform', 'translate(-30,0)')
+    )
     .call((s) => s.selectAll('line, path').attr('stroke', COLORS.border))
 
   g.append('text')

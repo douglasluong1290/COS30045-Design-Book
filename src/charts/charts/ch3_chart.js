@@ -107,22 +107,15 @@ export function chart(data) {
 
   // ----- chart group -----
   const g = svg.append('g').attr('transform', `translate(${M.left},${M.top})`)
+  // header — both metrics shown together
   g.append('text')
     .attr('x', 0)
     .attr('y', -16)
-    .attr('fill', COLORS.accent)
+    .attr('fill', COLORS.text)
     .style('font-size', '11px')
     .style('letter-spacing', '1px')
     .style('text-transform', 'uppercase')
-    .text('Count of cases')
-  g.append('text')
-    .attr('x', PANEL_W + PANEL_GAP_X)
-    .attr('y', -16)
-    .attr('fill', COLORS.muted)
-    .style('font-size', '11px')
-    .style('letter-spacing', '1px')
-    .style('text-transform', 'uppercase')
-    .text('Bed days')
+    .text('Demographics by age: clustered bars (cases · bed days)')
 
   function aggForSex(sex) {
     const filtered = sex === 'all' ? data : data.filter((d) => d.sex === sex)
@@ -139,10 +132,11 @@ export function chart(data) {
 
   function render() {
     const rows = aggForSex(activeSex)
+    // shared x scale so both metrics are comparable in the clustered layout
     const maxCases = d3.max(rows, (d) => d.cases) || 1
     const maxBeds = d3.max(rows, (d) => d.bed_days) || 1
-    const xCases = d3.scaleLinear().domain([0, maxCases]).range([0, PANEL_W])
-    const xBeds = d3.scaleLinear().domain([0, maxBeds]).range([0, PANEL_W])
+    const maxVal = Math.max(maxCases, maxBeds)
+    const x = d3.scaleLinear().domain([0, maxVal]).range([0, PANEL_W])
 
     const panels = g
       .selectAll('g.panel')
@@ -162,45 +156,41 @@ export function chart(data) {
           .style('font-size', '13px')
           .style('font-weight', '500')
           .text((d) => d.age_band)
-        ;[
-          { tx: 0, cls: 'grid-cases' },
-          { tx: PANEL_W + PANEL_GAP_X, cls: 'grid-beds' },
-        ].forEach(({ tx, cls }) => {
-          const gridG = p.append('g').attr('class', cls).attr('transform', `translate(${tx},0)`)
-          gridG
-            .selectAll('line')
-            .data(d3.range(0, 5))
-            .join('line')
-            .attr('x1', (i) => (PANEL_W / 4) * i)
-            .attr('x2', (i) => (PANEL_W / 4) * i)
-            .attr('y1', 0)
-            .attr('y2', PANEL_H)
-            .attr('stroke', COLORS.border)
-            .attr('stroke-dasharray', '2 4')
-        })
+        // single grid for the shared x axis
+        .append('g')
+        .attr('class', 'grid')
+        .selectAll('line')
+        .data(d3.range(0, 5))
+        .join('line')
+        .attr('x1', (i) => (PANEL_W / 4) * i)
+        .attr('x2', (i) => (PANEL_W / 4) * i)
+        .attr('y1', 0)
+        .attr('y2', PANEL_H)
+        .attr('stroke', COLORS.border)
+        .attr('stroke-dasharray', '2 4')
+        // two stacked bars per age band (clustered) — vertically offset
         p.append('rect')
           .attr('class', 'bar-cases')
-          .attr('y', PANEL_H / 2 - 9)
-          .attr('height', 18)
+          .attr('y', PANEL_H / 2 - 10)
+          .attr('height', 12)
           .attr('rx', 2)
           .attr('fill', COLORS.accent)
         p.append('rect')
           .attr('class', 'bar-beds')
-          .attr('y', PANEL_H / 2 - 9)
-          .attr('height', 18)
+          .attr('y', PANEL_H / 2 + 2)
+          .attr('height', 12)
           .attr('rx', 2)
           .attr('fill', COLORS.muted)
-          .attr('transform', `translate(${PANEL_W + PANEL_GAP_X},0)`)
         p.append('text')
           .attr('class', 'label-cases')
-          .attr('y', PANEL_H / 2)
+          .attr('y', PANEL_H / 2 - 4)
           .attr('dy', '0.35em')
           .attr('fill', COLORS.textH)
           .style('font-size', '12px')
           .style('font-weight', '500')
         p.append('text')
           .attr('class', 'label-beds')
-          .attr('y', PANEL_H / 2)
+          .attr('y', PANEL_H / 2 + 8)
           .attr('dy', '0.35em')
           .attr('fill', COLORS.textH)
           .style('font-size', '12px')
@@ -210,17 +200,17 @@ export function chart(data) {
 
     const t = d3.transition().duration(450)
 
-    panels.select('.bar-cases').transition(t).attr('width', (d) => xCases(d.cases))
-    panels.select('.bar-beds').transition(t).attr('width', (d) => xBeds(d.bed_days))
+    panels.select('.bar-cases').transition(t).attr('width', (d) => x(d.cases))
+    panels.select('.bar-beds').transition(t).attr('width', (d) => x(d.bed_days))
     panels
       .select('.label-cases')
       .transition(t)
-      .attr('x', (d) => xCases(d.cases) + 8)
+      .attr('x', (d) => x(d.cases) + 8)
       .text((d) => fmt.compact(d.cases))
     panels
       .select('.label-beds')
       .transition(t)
-      .attr('x', (d) => PANEL_W + PANEL_GAP_X + xBeds(d.bed_days) + 8)
+      .attr('x', (d) => x(d.bed_days) + 8)
       .text((d) => fmt.compact(d.bed_days))
 
     panels

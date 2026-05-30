@@ -302,7 +302,8 @@ code {
 
 .step {
   padding: 28px 30px;
-  min-height: 33vh;
+  /* allow the narrative card to size naturally to its content */
+  min-height: 0;
   box-sizing: border-box;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -497,8 +498,9 @@ code {
   position: relative;
   min-height: 320px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  /* allow chart SVGs to stretch to fill the placeholder */
+  align-items: stretch;
+  justify-content: stretch;
   background:
     repeating-linear-gradient(
       45deg,
@@ -531,6 +533,13 @@ code {
     max-width: 80%;
     text-align: center;
   }
+}
+
+/* Ensure mounted SVGs fill the placeholder container */
+.placeholder-canvas > svg {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
 .placeholder-spec {
