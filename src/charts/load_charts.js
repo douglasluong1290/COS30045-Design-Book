@@ -10,6 +10,7 @@ import { load as loadCh1, chart as chartCh1 } from './charts/ch1_chart.js'
 import { load as loadCh2, chart as chartCh2 } from './charts/ch2_chart.js'
 import { load as loadCh3, chart as chartCh3 } from './charts/ch3_chart.js'
 import { load as loadCh4, chart as chartCh4 } from './charts/ch4_chart.js'
+import { load as loadCh5, chart as chartCh5 } from './charts/ch5_chart.js'
 
 const GEO_PATH = '/data/au-states.geojson'
 
@@ -30,6 +31,7 @@ export async function loadCharts() {
     )
     runChart('ch3', () => chartCh3(loadCh3(sheets.publication)))
     runChart('ch4', () => chartCh4(loadCh4(sheets.publication)))
+    runChart('ch5', () => chartCh5(loadCh5(sheets.state_road)))
   } catch (err) {
     console.error('chart bootstrap failed:', err)
   }
