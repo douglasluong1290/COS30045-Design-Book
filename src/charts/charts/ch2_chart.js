@@ -13,16 +13,24 @@
 import * as d3 from 'd3'
 import {
   AGE_ORDER as _unused, // (silence unused import linters)
+  CHART_AXIS_FONT,
+  CHART_LEGEND_FONT,
   COLORS,
   PHASE_PALETTE,
   STATE_NAME_TO_CODE,
   STATE_CODE_TO_NAME,
   choroplethColor,
+  appendLegendPrefix,
+  CHART_TEXT_STYLE,
   drawGrid,
+  drillBarSize,
   fmt,
   makeTooltip,
   mountSvg,
   stateAdmissionFor,
+  styleAxisChrome,
+  styleAxisTicks,
+  styleChartText,
 } from './constants.js'
 
 const W = 880
@@ -103,7 +111,7 @@ export function chart(data) {
       tooltip.show(
         `<strong>${f.properties.STATE_NAME}</strong><br>` +
           `${fmt.int(f.properties.cases)} cases 2011–2021<br>` +
-          `<span style="color:${COLORS.accent};font-size:11px">Press to see more →</span>`,
+          `<span style="color:${COLORS.accent};${CHART_TEXT_STYLE}">Press to see more →</span>`,
         ev
       )
     })
@@ -124,7 +132,7 @@ export function chart(data) {
     .attr('text-anchor', 'middle')
     .attr('dy', '0.35em')
     .attr('fill', COLORS.textH)
-    .style('font-size', '11px')
+    .style('font-size', CHART_AXIS_FONT)
     .style('font-weight', '600')
     .style('pointer-events', 'none')
     .text((f) => f.properties.code)
@@ -135,7 +143,7 @@ export function chart(data) {
     .attr('x', 30)
     .attr('y', 24)
     .attr('fill', COLORS.text)
-    .style('font-size', '12px')
+    .style('font-size', CHART_AXIS_FONT)
     .style('letter-spacing', '1px')
     .style('text-transform', 'uppercase')
     .text('Hospitalised cases by state, 2011–2021 · click a state')
@@ -148,9 +156,9 @@ export function chart(data) {
     tooltip.hide()
     drillLayer.selectAll('*').remove()
 
-    const dM = { top: 70, right: 70, bottom: 70, left: 70 }
+    const dM = { top: 85, right: 70, bottom: 70, left: 70 }
     const dIW = W - dM.left - dM.right
-    const dIH = H - dM.top - dM.bottom
+    const dIH = H - dM.top - dM.bottom - 15
 
     // back button
     const back = drillLayer
@@ -171,7 +179,7 @@ export function chart(data) {
       .attr('y', 21)
       .attr('text-anchor', 'middle')
       .attr('fill', COLORS.accent)
-      .style('font-size', '13px')
+      .style('font-size', CHART_AXIS_FONT)
       .style('font-weight', '500')
       .text('← Back to map')
     back.on('click', closeDrill)
@@ -183,8 +191,8 @@ export function chart(data) {
       .attr('y', 36)
       .attr('text-anchor', 'middle')
       .attr('fill', COLORS.textH)
-      .style('font-size', '20px')
-      .style('font-weight', '500')
+      .style('font-size', CHART_AXIS_FONT)
+      .style('font-weight', '600')
       .text(stateName)
 
     // collate per-year data for the state
@@ -196,7 +204,9 @@ export function chart(data) {
       .sort((a, b) => a.year - b.year)
 
     const years = stateRows.map((r) => r['calendar year'])
-    const x = d3.scaleLinear().domain(d3.extent(years)).range([0, dIW])
+    const yearCount = Math.max(popRows.length, years.length, 1)
+    const bw = drillBarSize(dIW, yearCount)
+    const x = d3.scaleLinear().domain(d3.extent(years)).range([bw / 2, dIW - bw / 2])
     const yCases = d3
       .scaleLinear()
       .domain([0, d3.max(stateRows, (r) => r['count of cases']) * 1.1])
@@ -212,7 +222,6 @@ export function chart(data) {
     drawGrid(dg, x, yCases, dIW, dIH)
 
     // population bars — z-order BELOW the line
-    const bw = Math.max(8, (dIW / popRows.length) * 0.55)
     dg.append('g')
       .selectAll('rect.pop-bar')
       .data(popRows)
@@ -301,23 +310,23 @@ export function chart(data) {
     dg.append('g')
       .attr('transform', `translate(0,${dIH})`)
       .call(d3.axisBottom(x).tickFormat(d3.format('d')).ticks(stateRows.length))
-      .call((s) => s.selectAll('text').attr('fill', COLORS.text))
-      .call((s) => s.selectAll('line, path').attr('stroke', COLORS.border))
+      .call((s) => styleAxisTicks(s))
+      .call((s) => styleAxisChrome(s))
     dg.append('g')
       .call(d3.axisLeft(yCases).ticks(5).tickFormat(fmt.compact))
-      .call((s) => s.selectAll('text').attr('fill', COLORS.accent))
-      .call((s) => s.selectAll('line, path').attr('stroke', COLORS.border))
+      .call((s) => styleAxisTicks(s, COLORS.accent))
+      .call((s) => styleAxisChrome(s))
     dg.append('g')
       .attr('transform', `translate(${dIW},0)`)
       .call(d3.axisRight(yPop).ticks(5).tickFormat((v) => fmt.compact(v * 1000)))
-      .call((s) => s.selectAll('text').attr('fill', COLORS.muted))
-      .call((s) => s.selectAll('line, path').attr('stroke', COLORS.border))
+      .call((s) => styleAxisTicks(s, COLORS.muted))
+      .call((s) => styleAxisChrome(s))
 
     dg.append('text')
       .attr('x', -8)
       .attr('y', -14)
       .attr('fill', COLORS.accent)
-      .style('font-size', '11px')
+      .style('font-size', CHART_AXIS_FONT)
       .style('letter-spacing', '0.8px')
       .style('text-transform', 'uppercase')
       .text('Cases (line)')
@@ -326,7 +335,7 @@ export function chart(data) {
       .attr('y', -14)
       .attr('text-anchor', 'end')
       .attr('fill', COLORS.muted)
-      .style('font-size', '11px')
+      .style('font-size', CHART_AXIS_FONT)
       .style('letter-spacing', '0.8px')
       .style('text-transform', 'uppercase')
       .text('Population (bar)')
@@ -357,30 +366,33 @@ function drawChoroplethLegend(parent, color, [x, y]) {
   g.append('text')
     .attr('y', -6)
     .attr('fill', COLORS.text)
-    .style('font-size', '11px')
+    .style('font-size', CHART_LEGEND_FONT)
     .style('letter-spacing', '0.8px')
     .style('text-transform', 'uppercase')
-    .text('Total cases — heat scale')
-  g.append('text').attr('y', h + 14).attr('fill', COLORS.text).style('font-size', '11px').text('0')
+    .text('Legend: Total cases — heat scale')
+  g.append('text').attr('y', h + 14).attr('fill', COLORS.text).style('font-size', CHART_AXIS_FONT).text('0')
   g.append('text')
     .attr('x', w)
     .attr('y', h + 14)
     .attr('text-anchor', 'end')
     .attr('fill', COLORS.text)
-    .style('font-size', '11px')
+    .style('font-size', CHART_AXIS_FONT)
     .text(fmt.compact(color.domain()[1]))
 }
 
 function drawAdmissionLegend(parent, [x, y], isPhased) {
   const g = parent.append('g').attr('transform', `translate(${x},${y})`)
-  g.append('text')
-    .attr('y', -2)
-    .attr('fill', COLORS.text)
-    .style('font-size', '11px')
-    .style('letter-spacing', '0.8px')
-    .style('text-transform', 'uppercase')
-    .text(isPhased ? 'Admission' : 'Admission (only VIC + NSW use phased line)')
-  let cursor = 0
+  let cursor = appendLegendPrefix(g, { y: 12 })
+  if (!isPhased) {
+    const note = g
+      .append('text')
+      .attr('x', cursor)
+      .attr('y', 12)
+      .attr('fill', COLORS.text)
+      .style('font-size', CHART_LEGEND_FONT)
+      .text('Admission (VIC + NSW phased line)')
+    cursor += note.node().getComputedTextLength() + 16
+  }
   Object.entries(PHASE_PALETTE).forEach(([label, color]) => {
     const it = g.append('g').attr('transform', `translate(${cursor},10)`)
     it.append('rect').attr('y', 6).attr('width', 14).attr('height', 4).attr('rx', 2).attr('fill', color)
@@ -389,7 +401,7 @@ function drawAdmissionLegend(parent, [x, y], isPhased) {
       .attr('x', 20)
       .attr('y', 12)
       .attr('fill', COLORS.text)
-      .style('font-size', '11px')
+      .style('font-size', CHART_LEGEND_FONT)
       .text(label)
     cursor += 22 + t.node().getComputedTextLength() + 22
   })

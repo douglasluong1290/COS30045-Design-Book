@@ -10,13 +10,18 @@
 
 import * as d3 from 'd3'
 import {
+  CHART_TEXT_STYLE,
   COLORS,
   PHASE_PALETTE,
   admissionFor,
   drawGrid,
   fmt,
+  appendLegendPrefix,
   makeTooltip,
   mountSvg,
+  styleAxisChrome,
+  styleAxisTicks,
+  styleChartText,
 } from './constants.js'
 
 const W = 880
@@ -67,29 +72,31 @@ export function chart(data) {
   g.append('g')
     .attr('transform', `translate(0,${IH})`)
     .call(d3.axisBottom(x).tickFormat(d3.format('d')).ticks(data.length))
-    .call((s) => s.selectAll('text').attr('fill', COLORS.text))
-    .call((s) => s.selectAll('line, path').attr('stroke', COLORS.border))
+    .call((s) => styleAxisTicks(s))
+    .call((s) => styleAxisChrome(s))
   g.append('g')
     .call(d3.axisLeft(y).ticks(6).tickFormat(fmt.compact))
-    .call((s) => s.selectAll('text').attr('fill', COLORS.text))
-    .call((s) => s.selectAll('line, path').attr('stroke', COLORS.border))
+    .call((s) => styleAxisTicks(s))
+    .call((s) => styleAxisChrome(s))
 
-  g.append('text')
-    .attr('x', -IH / 2)
-    .attr('y', -56)
-    .attr('transform', 'rotate(-90)')
-    .attr('text-anchor', 'middle')
-    .attr('fill', COLORS.text)
-    .style('font-size', '12px')
+  styleChartText(
+    g
+      .append('text')
+      .attr('x', -IH / 2)
+      .attr('y', -56)
+      .attr('transform', 'rotate(-90)')
+      .attr('text-anchor', 'middle')
+  )
     .style('letter-spacing', '1px')
     .style('text-transform', 'uppercase')
     .text('Hospitalisation count')
-  g.append('text')
-    .attr('x', IW / 2)
-    .attr('y', IH + 38)
-    .attr('text-anchor', 'middle')
-    .attr('fill', COLORS.text)
-    .style('font-size', '12px')
+  styleChartText(
+    g
+      .append('text')
+      .attr('x', IW / 2)
+      .attr('y', IH + 38)
+      .attr('text-anchor', 'middle')
+  )
     .style('letter-spacing', '1px')
     .style('text-transform', 'uppercase')
     .text('Year')
@@ -150,7 +157,7 @@ export function chart(data) {
       tooltip.show(
         `<strong style="color:${PHASE_PALETTE[d.admission]}">${d.year}</strong><br>` +
           `${fmt.int(d.hospitalisations)} hospitalisations<br>` +
-          `<span style="color:${COLORS.text};font-size:11px">${d.admission}</span>`,
+          `<span style="color:${COLORS.text};${CHART_TEXT_STYLE}">${d.admission}</span>`,
         ev
       )
     })
@@ -165,17 +172,11 @@ export function chart(data) {
     .append('g')
     .attr('class', 'legend')
     .attr('transform', `translate(${M.left},${M.top - 32})`)
-  let cursor = 0
+  let cursor = appendLegendPrefix(legend)
   Object.entries(PHASE_PALETTE).forEach(([label, color]) => {
     const item = legend.append('g').attr('transform', `translate(${cursor},0)`)
     item.append('rect').attr('y', 6).attr('width', 14).attr('height', 4).attr('rx', 2).attr('fill', color)
-    const txt = item
-      .append('text')
-      .attr('x', 20)
-      .attr('y', 12)
-      .attr('fill', COLORS.text)
-      .style('font-size', '12px')
-      .text(label)
+    const txt = styleChartText(item.append('text').attr('x', 20).attr('y', 12)).text(label)
     cursor += 20 + txt.node().getComputedTextLength() + 24
   })
 }

@@ -8,11 +8,19 @@
  */
 
 import * as d3 from 'd3'
-import { COLORS, fmt, makeTooltip, mountSvg } from './constants.js'
+import {
+  CHART_AXIS_FONT,
+  CHART_LEGEND_FONT,
+  COLORS,
+  fmt,
+  makeTooltip,
+  mountSvg,
+  wrapAxisTickLabel,
+} from './constants.js'
 
 const W = 1200
 const H = 640
-const M = { top: 80, right: 80, bottom: 60, left: 240 }
+const M = { top: 80, right: 80, bottom: 60, left: 280 }
 const IW = W - M.left - M.right
 const IH = H - M.top - M.bottom
 
@@ -104,12 +112,10 @@ export function chart(data) {
       tooltip.hide()
     })
 
-  // Cell value labels — only render where the cell is dark enough that
-  // a black-text label would be illegible. We use white text on dark
-  // cells and skip the label on near-empty cells.
+  // Cell value labels — show every non-zero cell (small values use a smaller type size).
   const labelThreshold = maxVal * 0.15
   g.selectAll('text.cell-label')
-    .data(cells.filter((d) => d.cases >= labelThreshold))
+    .data(cells.filter((d) => d.cases > 0))
     .join('text')
     .attr('class', 'cell-label')
     .attr('x', (d) => x(d.state) + x.bandwidth() / 2)
@@ -117,7 +123,7 @@ export function chart(data) {
     .attr('text-anchor', 'middle')
     .attr('dy', '0.35em')
     .attr('fill', (d) => (d.cases > maxVal * 0.55 ? '#fff' : COLORS.textH))
-    .style('font-size', '11px')
+    .style('font-size', CHART_AXIS_FONT)
     .style('font-weight', '500')
     .style('pointer-events', 'none')
     .text((d) => fmt.compact(d.cases))
@@ -131,22 +137,21 @@ export function chart(data) {
         .selectAll('text')
         .attr('fill', COLORS.textH)
         .attr('dy', '1.2em')
-        .style('font-size', '12px')
+        .style('font-size', CHART_AXIS_FONT)
         .style('font-weight', '600')
     )
     .call((s) => s.selectAll('path').attr('stroke', 'none'))
 
-  // Y axis — road user labels
-  g.append('g')
-    .call(d3.axisLeft(y).tickSize(0))
-    .call((s) =>
-      s
-        .selectAll('text')
-        .attr('fill', COLORS.textH)
-        .attr('dx', '-0.4em')
-        .style('font-size', '12px')
-    )
-    .call((s) => s.selectAll('path').attr('stroke', 'none'))
+  // Y axis — road user labels (wrapped, max 4 words per line)
+  const yAxis = g.append('g').call(d3.axisLeft(y).tickSize(0))
+  yAxis.selectAll('path').attr('stroke', 'none')
+  yAxis
+    .selectAll('text')
+    .attr('fill', COLORS.textH)
+    .attr('dx', '-0.4em')
+    .attr('text-anchor', 'end')
+    .style('font-size', CHART_AXIS_FONT)
+    .call(wrapAxisTickLabel, 4)
 
   // Axis titles
   g.append('text')
@@ -154,7 +159,7 @@ export function chart(data) {
     .attr('y', IH + 44)
     .attr('text-anchor', 'middle')
     .attr('fill', COLORS.text)
-    .style('font-size', '12px')
+    .style('font-size', CHART_AXIS_FONT)
     .style('letter-spacing', '1px')
     .style('text-transform', 'uppercase')
     .text('State / territory')
@@ -165,7 +170,7 @@ export function chart(data) {
     .attr('transform', 'rotate(-90)')
     .attr('text-anchor', 'middle')
     .attr('fill', COLORS.text)
-    .style('font-size', '12px')
+    .style('font-size', CHART_AXIS_FONT)
     .style('letter-spacing', '1px')
     .style('text-transform', 'uppercase')
     .text('Road user')
@@ -194,10 +199,10 @@ function drawColorLegend(parent, color, maxVal, { x, y, width, height }) {
   lg.append('text')
     .attr('y', -6)
     .attr('fill', COLORS.text)
-    .style('font-size', '11px')
+    .style('font-size', CHART_LEGEND_FONT)
     .style('letter-spacing', '0.8px')
     .style('text-transform', 'uppercase')
-    .text('Cases — heat scale')
+    .text('Legend: Cases — heat scale')
 
   lg.append('rect')
     .attr('width', width)
@@ -210,7 +215,7 @@ function drawColorLegend(parent, color, maxVal, { x, y, width, height }) {
   lg.append('text')
     .attr('y', height + 14)
     .attr('fill', COLORS.text)
-    .style('font-size', '11px')
+    .style('font-size', CHART_AXIS_FONT)
     .text('0')
 
   lg.append('text')
@@ -218,6 +223,6 @@ function drawColorLegend(parent, color, maxVal, { x, y, width, height }) {
     .attr('y', height + 14)
     .attr('text-anchor', 'end')
     .attr('fill', COLORS.text)
-    .style('font-size', '11px')
+    .style('font-size', CHART_AXIS_FONT)
     .text(fmt.compact(maxVal))
 }

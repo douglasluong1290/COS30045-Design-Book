@@ -62,6 +62,77 @@ export const fmt = {
   },
 }
 
+/* Chart 1 typography — shared by every chart module. */
+export const CHART_AXIS_FONT = '14px'
+export const CHART_LEGEND_FONT = CHART_AXIS_FONT
+export const CHART_FILTER_FONT = CHART_AXIS_FONT
+export const CHART_FONT_FAMILY = cv(
+  '--sans',
+  "system-ui, 'Segoe UI', Roboto, sans-serif"
+)
+
+/** Inline CSS for HTML tooltips (same family + size as chart 1). */
+export const CHART_TEXT_STYLE = `font-size:${CHART_AXIS_FONT};font-family:${CHART_FONT_FAMILY}`
+
+export function styleChartText(selection, fill = COLORS.text) {
+  return selection
+    .attr('fill', fill)
+    .style('font-size', CHART_AXIS_FONT)
+    .style('font-family', CHART_FONT_FAMILY)
+}
+
+/** Returns x-offset after a leading “Legend:” label (for horizontal legend rows). */
+export function appendLegendPrefix(g, { x = 0, y = 12 } = {}) {
+  const t = styleChartText(
+    g.append('text').attr('x', x).attr('y', y),
+    COLORS.text
+  ).text('Legend:')
+  return x + t.node().getComputedTextLength() + 8
+}
+
+export function styleAxisTicks(selection, fill = COLORS.text) {
+  return styleChartText(selection.selectAll('text'), fill)
+}
+
+export function styleAxisChrome(selection) {
+  return selection.selectAll('line, path').attr('stroke', COLORS.border)
+}
+
+/** Population-bar width in chart-2 drill; reused as horizontal bar thickness in chart 3. */
+export function drillBarSize(innerWidth, slotCount) {
+  return Math.max(8, (innerWidth / Math.max(slotCount, 1)) * 0.55)
+}
+
+/** Axis tick labels: wrap at most `wordsPerLine` words per line (chart 5 y-axis). */
+export function wrapAxisTickLabel(textSel, wordsPerLine = 4, lineHeightEm = 1.12) {
+  textSel.each(function () {
+    const el = d3.select(this)
+    const full = el.text()
+    const words = full.split(/\s+/).filter(Boolean)
+    if (words.length <= wordsPerLine) return
+
+    const x = el.attr('x')
+    const y = el.attr('y')
+    const dy = el.attr('dy') ?? 0
+    const anchor = el.attr('text-anchor')
+    const dx = el.attr('dx')
+    const lines = []
+    for (let i = 0; i < words.length; i += wordsPerLine) {
+      lines.push(words.slice(i, i + wordsPerLine).join(' '))
+    }
+
+    el.text(null)
+    lines.forEach((line, i) => {
+      const tspan = styleChartText(el.append('tspan').text(line), COLORS.textH)
+      if (x != null) tspan.attr('x', x)
+      if (anchor) tspan.attr('text-anchor', anchor)
+      if (dx != null) tspan.attr('dx', dx)
+      tspan.attr('dy', i === 0 ? dy : `${lineHeightEm}em`)
+      if (i === 0 && y != null) tspan.attr('y', y)
+    })
+  })
+}
+
 /* Admission category — same SWITCH rule as the spec.  */
 export function admissionFor(year) {
   if (year === 2011) return 'Hospitalised injuries'
@@ -96,6 +167,8 @@ export function mountSvg(rootEl, { width = 880, height = 520 } = {}) {
     .style('width', '100%')
     .style('height', '100%')
     .style('display', 'block')
+    .style('font-family', CHART_FONT_FAMILY)
+    .style('font-size', CHART_AXIS_FONT)
 }
 
 /* Dotted light-gray background grid (the spec calls for it everywhere). */
@@ -141,7 +214,8 @@ export function makeTooltip() {
     background: COLORS.bg,
     border: `1px solid ${COLORS.border}`,
     borderRadius: '6px',
-    fontSize: '13px',
+    fontSize: CHART_AXIS_FONT,
+    fontFamily: CHART_FONT_FAMILY,
     color: COLORS.textH,
     boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
     opacity: '0',

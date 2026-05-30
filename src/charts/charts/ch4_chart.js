@@ -13,11 +13,33 @@
  */
 
 import * as d3 from 'd3'
-import { COLORS, fmt, makeTooltip, mountSvg } from './constants.js'
+import {
+  appendLegendPrefix,
+  CHART_FONT_FAMILY,
+  COLORS,
+  fmt,
+  makeTooltip,
+  mountSvg,
+  styleAxisChrome,
+  styleAxisTicks,
+  wrapAxisTickLabel,
+} from './constants.js'
 
 const W = 1300
 const H = 700
-const M = { top: 70, right: 140, bottom: 50, left: 220 }
+const M = { top: 70, right: 140, bottom: 50, left: 300 }
+const CHART_SHIFT_X = 100
+const PLOT_GAP_X = 14
+/** Chart 4 only — +2px over the shared 14px chart typography. */
+const CH4_FONT = '16px'
+const CH4_TEXT_STYLE = `font-size:${CH4_FONT};font-family:${CHART_FONT_FAMILY}`
+
+function styleCh4Text(selection, fill = COLORS.text) {
+  return selection
+    .attr('fill', fill)
+    .style('font-size', CH4_FONT)
+    .style('font-family', CHART_FONT_FAMILY)
+}
 const IW = W - M.left - M.right
 const IH = H - M.top - M.bottom
 
@@ -46,11 +68,15 @@ export function chart(data) {
   const root = document.querySelector('#chart-4-mechanism .placeholder-canvas')
   if (!root) return
 
-  const svg = mountSvg(root, { width: W, height: H })
+  const svg = mountSvg(root, { width: W, height: H }).style('font-size', CH4_FONT)
   // center the chart group horizontally within the SVG by using the
   // midpoint of the left/right margins, and apply the top margin as before
   const centerX = (M.left + M.right) / 2
-  const g = svg.append('g').attr('transform', `translate(${centerX},${M.top})`)
+  const chartG = svg
+    .append('g')
+    .attr('class', 'chart-content')
+    .attr('transform', `translate(${centerX + CHART_SHIFT_X},${M.top})`)
+  const plotG = chartG.append('g').attr('class', 'plot-layer').attr('transform', `translate(${PLOT_GAP_X},0)`)
   const tooltip = makeTooltip()
 
   const y = d3
@@ -66,7 +92,7 @@ export function chart(data) {
     .range([0, IW])
 
   // dotted vertical grid
-  g.append('g')
+  plotG.append('g')
     .selectAll('line')
     .data(x.ticks(6))
     .join('line')
@@ -77,37 +103,32 @@ export function chart(data) {
     .attr('stroke', COLORS.border)
     .attr('stroke-dasharray', '2 4')
 
-  // axes
-  g.append('g')
+  // x-axis
+  plotG
+    .append('g')
     .attr('transform', `translate(0,${IH})`)
     .call(d3.axisBottom(x).ticks(6).tickFormat(fmt.compact))
-    .call((s) => s.selectAll('text').attr('fill', COLORS.text))
-    .call((s) => s.selectAll('line, path').attr('stroke', COLORS.border))
-  // draw the y-axis and shift only the label text left by 30px so the
-  // ticks and axis path remain in their original positions
-  g.append('g')
-    .call(d3.axisLeft(y))
-    .call((s) =>
-      s
-        .selectAll('text')
-        .attr('fill', COLORS.textH)
-        .style('font-size', '12px')
-        .attr('transform', 'translate(-30,0)')
-    )
-    .call((s) => s.selectAll('line, path').attr('stroke', COLORS.border))
+    .call((s) => styleCh4Text(s.selectAll('text')))
+    .call((s) => styleAxisChrome(s))
+  // Y-axis labels only (no axis line); plot shifted right of labels
+  const yAxis = chartG.append('g').attr('class', 'y-axis-layer').call(d3.axisLeft(y).tickSize(0))
+  yAxis.selectAll('path').attr('stroke', 'none')
+  yAxis.selectAll('line').attr('stroke', 'none')
+  styleCh4Text(yAxis.selectAll('text'), COLORS.textH)
+    .attr('text-anchor', 'end')
+    .attr('transform', 'translate(-30,0)')
+    .call(wrapAxisTickLabel, 4)
+  yAxis.selectAll('tspan').style('font-size', CH4_FONT).style('font-family', CHART_FONT_FAMILY)
 
-  g.append('text')
-    .attr('x', IW / 2)
-    .attr('y', IH + 38)
-    .attr('text-anchor', 'middle')
-    .attr('fill', COLORS.text)
-    .style('font-size', '12px')
+  styleCh4Text(
+    plotG.append('text').attr('x', IW / 2).attr('y', IH + 38).attr('text-anchor', 'middle')
+  )
     .style('letter-spacing', '1px')
     .style('text-transform', 'uppercase')
     .text('Count')
 
   // dumbbells
-  const row = g
+  const row = plotG
     .append('g')
     .selectAll('g.dumbbell')
     .data(data, (d) => d.road_user)
@@ -148,7 +169,6 @@ export function chart(data) {
     .attr('text-anchor', (d) => (d.cases >= d.bed_days ? 'start' : 'end'))
     .attr('dy', '0.35em')
     .attr('fill', COLORS.accent)
-    .style('font-size', '11px')
     .text((d) => fmt.compact(d.cases))
   row
     .append('text')
@@ -156,7 +176,6 @@ export function chart(data) {
     .attr('text-anchor', (d) => (d.bed_days > d.cases ? 'start' : 'end'))
     .attr('dy', '0.35em')
     .attr('fill', COLORS.muted)
-    .style('font-size', '11px')
     .text((d) => fmt.compact(d.bed_days))
 
   row
@@ -165,7 +184,7 @@ export function chart(data) {
       tooltip.show(
         `<strong>${d.road_user}</strong><br>` +
           `${fmt.int(d.cases)} cases<br>${fmt.int(d.bed_days)} bed days<br>` +
-          `<span style="color:${COLORS.text};font-size:11px">${(d.bed_days / d.cases).toFixed(1)} bed days / case</span>`,
+          `<span style="color:${COLORS.text};${CH4_TEXT_STYLE}">${(d.bed_days / d.cases).toFixed(1)} bed days / case</span>`,
         ev
       )
     })
@@ -176,22 +195,20 @@ export function chart(data) {
     })
 
   // legend
-  const legend = svg.append('g').attr('class', 'legend').attr('transform', `translate(${M.left},24)`)
+  const legend = svg
+    .append('g')
+    .attr('class', 'legend')
+    .attr('transform', `translate(${M.left + CHART_SHIFT_X},24)`)
   const items = [
     { label: 'Count of cases', color: COLORS.accent },
     { label: 'Bed days', color: COLORS.muted },
   ]
-  let cursor = 0
+  let cursor = appendLegendPrefix(legend, { y: 14 })
   items.forEach((it) => {
     const item = legend.append('g').attr('transform', `translate(${cursor},0)`)
     item.append('circle').attr('r', 6).attr('cx', 6).attr('cy', 10).attr('fill', it.color)
-    const t = item
-      .append('text')
-      .attr('x', 18)
-      .attr('y', 14)
-      .attr('fill', COLORS.text)
-      .style('font-size', '12px')
-      .text(it.label)
+    const t = styleCh4Text(item.append('text').attr('x', 18).attr('y', 14)).text(it.label)
     cursor += 18 + t.node().getComputedTextLength() + 28
   })
+  legend.selectAll('text').style('font-size', CH4_FONT).style('font-family', CHART_FONT_FAMILY)
 }
