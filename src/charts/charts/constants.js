@@ -20,12 +20,23 @@ export const COLORS = {
   amber: '#f59e0b',
 }
 
-/* Three-tone admission palette. Reused by chart 1 (national line) and
- * the VIC / NSW segments in chart 2's drill view. */
+/* Three-tone admission palette — kept in the SAME hue family (purple)
+ * so the visual difference between admission categories is carried by
+ * line-type (see PHASE_DASH) rather than colour. Spec for chart 1 +
+ * chart 2's drill line.
+ */
 export const PHASE_PALETTE = {
-  'Hospitalised injuries': COLORS.muted,
-  'Change in admissions 2012': COLORS.accent,
-  'Change in admissions 2017': COLORS.amber,
+  'Hospitalised injuries': '#d1a8ff',
+  'Change in admissions 2012': '#aa3bff',
+  'Change in admissions 2017': '#6b1aa0',
+}
+
+/* Stroke-dasharray paired with each admission category. Empty string =
+ * solid stroke. */
+export const PHASE_DASH = {
+  'Hospitalised injuries': '',
+  'Change in admissions 2012': '8 4',
+  'Change in admissions 2017': '2 4',
 }
 
 /* Red-hue sequential scale builder for chart 2's choropleth. */

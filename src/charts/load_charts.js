@@ -27,7 +27,7 @@ export async function loadCharts() {
     // each chart is wrapped so a single failure doesn't take down the others
     runChart('ch1', () => chartCh1(loadCh1(sheets.publication)))
     runChart('ch2', () =>
-      chartCh2(loadCh2(sheets.state_summary, sheets.population, geo))
+      chartCh2(loadCh2(sheets.state, sheets.population, geo))
     )
     runChart('ch3', () => chartCh3(loadCh3(sheets.publication)))
     runChart('ch4', () => chartCh4(loadCh4(sheets.publication)))
