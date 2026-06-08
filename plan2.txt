@@ -1,5 +1,0 @@
-charts:
-- chart chapter 3: 
-    - translate the y-axis label 10px to the left
-- chart chapter 4:
-    - shift the whole chart with all labels 20px more to the right
