@@ -180,9 +180,6 @@ export function chart(data) {
     .style('text-transform', 'uppercase')
     .text('Hospitalised cases by state, 2011–2021 · click a bubble')
 
-  // bubble-size legend (bottom-left)
-  drawBubbleLegend(mapLayer, r, [40, H - 90])
-
   // ---- drill ----
   function openDrill(stateCode, stateName) {
     tooltip.hide()
@@ -376,39 +373,6 @@ export function chart(data) {
     drillLayer.style('display', 'none')
     mapLayer.style('display', 'block')
   }
-}
-
-/* tiny "small/big" bubble-size legend */
-function drawBubbleLegend(parent, r, [x, y]) {
-  const [, maxVal] = r.domain()
-  const sample = [Math.round(maxVal * 0.2), Math.round(maxVal * 0.6), maxVal]
-  const g = parent.append('g').attr('transform', `translate(${x},${y})`)
-  g.append('text')
-    .attr('y', 0)
-    .attr('fill', COLORS.text)
-    .style('font-size', CHART_LEGEND_FONT)
-    .style('letter-spacing', '0.8px')
-    .style('text-transform', 'uppercase')
-    .text('Legend: Total cases — bubble size')
-  let cursor = 0
-  sample.forEach((v) => {
-    const rad = r(v)
-    g.append('circle')
-      .attr('cx', cursor + rad)
-      .attr('cy', 24 + rad)
-      .attr('r', rad)
-      .attr('fill', COLORS.accent)
-      .attr('fill-opacity', 0.35)
-      .attr('stroke', COLORS.accent)
-    g.append('text')
-      .attr('x', cursor + rad)
-      .attr('y', 24 + rad * 2 + 14)
-      .attr('text-anchor', 'middle')
-      .attr('fill', COLORS.text)
-      .style('font-size', CHART_AXIS_FONT)
-      .text(fmt.compact(v))
-    cursor += rad * 2 + 22
-  })
 }
 
 function drawAdmissionLegend(parent, [x, y], isPhased) {

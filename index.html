@@ -28,6 +28,48 @@
       <div class="ticks"></div>
 
       <!-- ============================================================ -->
+      <!-- SECTION 0 — DATA NOTES                                        -->
+      <!-- ============================================================ -->
+      <section class="limitations data-notes" id="section-0">
+        <p class="chapter-label">Section 0 — data notes</p>
+        <h2>About the data behind these visuals</h2>
+        <p>
+          All charts and figures draw on BITRE hospitalised road crash data for
+          Australia, 2011–2021. Case counts and bed days are aggregated from
+          state-level records across the publication period.
+        </p>
+        <ul>
+          <li>
+            <strong>Road user filtering.</strong> All cases where road user was not
+            defined or recorded as <em>Not applicable</em> were excluded from the
+            visuals.
+          </li>
+          <li>
+            <strong>Raw counts favour populous states.</strong> NSW, VIC and QLD always
+            look large in absolute terms. NT, TAS and ACT figures are contextualised
+            with yearly population data in Chapter 2's drill view.
+          </li>
+          <li>
+            <strong>Average bed days is a workload measure, not a clinical severity
+            score.</strong> It is computed as total bed days ÷ total count of cases for
+            the relevant group, then rounded to the nearest integer.
+          </li>
+          <li>
+            <strong>Combined road-user categories.</strong>
+            <em>Car driver, passenger or unknown position</em> is grouped into one
+            category, so the story does not separate drivers from passengers.
+          </li>
+          <li>
+            <strong>Admission boundaries are pre-computed.</strong> VIC and NSW each show
+            their own admission change points (2012 for VIC, 2017 for NSW) in Chapter
+            2's drill line, and the 3-phase national split appears in Chapter 1.
+          </li>
+        </ul>
+      </section>
+
+      <div class="ticks"></div>
+
+      <!-- ============================================================ -->
       <!-- CHAPTER 1 — THE NATIONAL PICTURE                              -->
       <!-- ============================================================ -->
       <section class="chapter" id="chapter-1">
@@ -65,8 +107,8 @@
               <p>
                 The dip lasted exactly as long as the lockdowns did. By 2021 the count
                 rebounded to <strong>39,035 cases</strong> — the
-                <strong>highest annual total</strong> in the transformed state-level
-                dataset. The problem is structural; the 2020 reprieve was behavioural.
+                <strong>highest annual total</strong> in the decade. The problem is
+                structural; the 2020 reprieve was behavioural.
               </p>
               <ul class="kpi-strip kpi-strip--inline">
                 <li><span class="kpi-value">+15.8%</span><span class="kpi-label">2011 → 2019</span></li>
@@ -133,7 +175,7 @@
                 Queensland shows the steepest absolute growth among the large states:
                 from <strong>6,322 cases in 2011 to 10,447 in 2021</strong> — a
                 <strong>+65.2% rise</strong>. That is one of the clearest examples of a
-                worsening state-level trend in the transformed dataset.
+                worsening state-level trend.
               </p>
             </div>
 
@@ -143,7 +185,7 @@
                 NT looks small in absolute terms — <strong>710 cases in 2021</strong> —
                 but with a population of only <strong>~249,300</strong> that is roughly
                 <strong>285 cases per 100,000 people</strong>, the highest per-capita
-                burden in the transformed dataset. Queensland sat at ~198 per 100k, NSW
+                burden nationally. Queensland sat at ~198 per 100k, NSW
                 at ~111.
               </p>
               <p class="caveat">
@@ -204,8 +246,8 @@
             <div class="step" data-step="3">
               <p class="step-eyebrow">The gender split — correcting the earlier story</p>
               <p>
-                Earlier readings suggested females were the majority. The transformed
-                dataset shows the opposite: <strong>males account for about 65% of
+                Earlier readings suggested females were the majority. The figures show
+                the opposite: <strong>males account for about 65% of
                 hospitalised cases</strong> (262,280 cases over 2011–2021); females are
                 <strong>~35%</strong> (141,000 cases). The share is consistent across
                 every year, fluctuating only slightly between 65.2% and 65.7%.
@@ -253,8 +295,8 @@
             <div class="step is-active" data-step="1">
               <p class="step-eyebrow">Volume: car occupants</p>
               <p>
-                In the transformed state_road dataset, <strong>car driver, passenger or
-                unknown position</strong> is one combined category. It recorded
+                <strong>Car driver, passenger or unknown position</strong> is one
+                combined category. It recorded
                 <strong>193,216 cases</strong> across the decade — the dominant source
                 of hospitalised road crash injuries.
               </p>
@@ -368,38 +410,6 @@
           </div>
 
         </div>
-      </section>
-
-      <div class="ticks"></div>
-
-      <!-- ============================================================ -->
-      <!-- LIMITATIONS                                                   -->
-      <!-- ============================================================ -->
-      <section class="limitations" id="limitations">
-        <h2>Limitations surfaced in this narrative</h2>
-        <ul>
-          <li>
-            <strong>Raw counts favour populous states.</strong> NSW, VIC and QLD always
-            look large in absolute terms. NT, TAS and ACT figures are contextualised
-            with yearly population data in Chapter 2's drill view.
-          </li>
-          <li>
-            <strong>Average bed days is a workload measure, not a clinical severity
-            score.</strong> It is computed as total bed days ÷ total count of cases for
-            the relevant group, then rounded to the nearest integer.
-          </li>
-          <li>
-            <strong>Combined road-user categories.</strong> The state_road sheet groups
-            <em>car driver, passenger or unknown position</em> into one category, so
-            this narrative does not separate drivers from passengers.
-          </li>
-          <li>
-            <strong>Admission boundaries are pre-computed.</strong> The Admission column
-            comes from the transformed workbook directly — VIC and NSW each show their
-            own admission change points (2012 for VIC, 2017 for NSW) in Chapter 2's
-            drill line, and the 3-phase national split appears in Chapter 1.
-          </li>
-        </ul>
       </section>
 
       <div class="ticks"></div>

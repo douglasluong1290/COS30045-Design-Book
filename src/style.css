@@ -4,7 +4,7 @@
   --bg: #fff;
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
-  --accent: #aa3bff;
+  --accent: #9916fd;
   --accent-bg: rgba(170, 59, 255, 0.1);
   --accent-border: rgba(170, 59, 255, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
@@ -633,12 +633,28 @@ code {
   }
 }
 
-.limitations {
+.limitations,
+.data-notes {
   padding: 64px 64px;
   border-bottom: 1px solid var(--border);
 
+  .chapter-label {
+    font-size: 13px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
   h2 {
     margin-bottom: 24px;
+  }
+
+  > p {
+    max-width: 72ch;
+    margin-bottom: 24px;
+    font-size: 15px;
+    line-height: 158%;
   }
 
   ul {
