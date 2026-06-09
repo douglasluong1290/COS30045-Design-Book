@@ -12,7 +12,7 @@ import { load as loadCh3, chart as chartCh3 } from './charts/ch3_chart.js'
 import { load as loadCh4, chart as chartCh4 } from './charts/ch4_chart.js'
 import { load as loadCh5, chart as chartCh5 } from './charts/ch5_chart.js'
 
-const GEO_PATH = '/data/au-states.geojson'
+const GEO_PATH = `${import.meta.env.BASE_URL}data/au-states.geojson`
 
 export async function loadCharts() {
   try {
@@ -27,7 +27,7 @@ export async function loadCharts() {
     // each chart is wrapped so a single failure doesn't take down the others
     runChart('ch1', () => chartCh1(loadCh1(sheets.publication)))
     runChart('ch2', () =>
-      chartCh2(loadCh2(sheets.state_summary, sheets.population, geo))
+      chartCh2(loadCh2(sheets.state, sheets.population, geo))
     )
     runChart('ch3', () => chartCh3(loadCh3(sheets.publication)))
     runChart('ch4', () => chartCh4(loadCh4(sheets.publication)))

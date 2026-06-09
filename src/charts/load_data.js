@@ -8,7 +8,7 @@
 
 import * as XLSX from 'xlsx'
 
-const XLSX_PATH = '/datasets/transformed_datasets.xlsx'
+const XLSX_PATH = `${import.meta.env.BASE_URL}datasets/transformed_datasets.xlsx`
 
 export async function loadData(path = XLSX_PATH) {
   const buf = await fetch(path).then((r) => {

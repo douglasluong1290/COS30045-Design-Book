@@ -1,67 +1,83 @@
-/* Chart 2 — Australia choropleth with click-to-drill.
+/* Chart 2 — Australia map with case-count bubbles + click-drill.
  *
- * Sheets: state_summary, population
+ * Sheets: state (6-monthly), population
  * Geo: public/data/au-states.geojson
  * Spec:
- *   - choropleth coloured by sum of "count of cases" (red hues)
- *   - hover state → tooltip with the sum + "Press to see more"
- *   - click → line × bar drill (line = cases per year, bar = population)
- *   - VIC + NSW: line uses admission palette; bar unchanged
- *   - legend = admission (only shown on the drill view)
+ *   - bubble per state, sized by SUM(count of cases) across period
+ *   - hover bubble → tooltip with the sum + "Press to see more"
+ *   - click → line × bar drill (line: cases per year, bar: population)
+ *   - VIC + NSW: line segmented by admission, different line types,
+ *     same hue family, NO connection between admissions
+ *   - legend = admission (drill view only)
  */
 
 import * as d3 from 'd3'
 import {
-  AGE_ORDER as _unused, // (silence unused import linters)
   CHART_AXIS_FONT,
   CHART_LEGEND_FONT,
+  CHART_TEXT_STYLE,
   COLORS,
+  PHASE_DASH,
   PHASE_PALETTE,
   STATE_NAME_TO_CODE,
-  STATE_CODE_TO_NAME,
-  choroplethColor,
   appendLegendPrefix,
-  CHART_TEXT_STYLE,
   drawGrid,
   drillBarSize,
   fmt,
   makeTooltip,
   mountSvg,
-  stateAdmissionFor,
   styleAxisChrome,
   styleAxisTicks,
-  styleChartText,
 } from './constants.js'
 
 const W = 880
 const H = 540
 
-/* load() — accept the two CSV strings + the GeoJSON, return prepared data. */
-export function load(stateSummaryCsv, populationCsv, geo) {
-  const summary = d3.csvParse(stateSummaryCsv, d3.autoType)
+/* load() — aggregate the 6-monthly state sheet to annual per state. */
+export function load(stateCsv, populationCsv, geo) {
+  const state = d3.csvParse(stateCsv, d3.autoType)
   const population = d3.csvParse(populationCsv, d3.autoType)
 
-  // sum cases per state across the whole period
-  const totalsMap = d3.rollup(
-    summary,
-    (v) => d3.sum(v, (r) => r['count of cases'] ?? 0),
-    (r) => r['state or territory']
+  // Annual aggregation per (state, year). admission is identical for
+  // both halves of a year, so pick the first.
+  const nested = d3.rollups(
+    state,
+    (v) => ({
+      cases: d3.sum(v, (r) => r['count of cases'] ?? 0),
+      bed_days: d3.sum(v, (r) => r['bed days'] ?? 0),
+      admission: v[0]?.Admission || null,
+    }),
+    (r) => r['state or territory'],
+    (r) => r['calendar year']
   )
 
-  // attach total cases + state code onto each GeoJSON feature
+  const annualByState = new Map(
+    nested.map(([s, years]) => [
+      s,
+      years
+        .map(([year, agg]) => ({
+          state: s,
+          year,
+          cases: agg.cases,
+          bed_days: agg.bed_days,
+          admission: agg.admission,
+        }))
+        .sort((a, b) => a.year - b.year),
+    ])
+  )
+
+  const totalsMap = new Map(
+    Array.from(annualByState, ([s, rows]) => [s, d3.sum(rows, (r) => r.cases)])
+  )
+
   const features = geo.features.map((f) => {
     const code = STATE_NAME_TO_CODE[f.properties.STATE_NAME] || f.properties.STATE_NAME
     return {
       ...f,
-      properties: {
-        ...f.properties,
-        code,
-        cases: totalsMap.get(code) || 0,
-      },
+      properties: { ...f.properties, code, cases: totalsMap.get(code) || 0 },
     }
   })
 
-  // normalise population sheet onto state-code keys
   const populationByState = d3.group(
     population.map((r) => ({
       state: STATE_NAME_TO_CODE[r['Region/State']] || r['Region/State'],
@@ -71,13 +87,15 @@ export function load(stateSummaryCsv, populationCsv, geo) {
     (r) => r.state
   )
 
-  // state-trend (per year cases per state) for the drill line
-  const trendByState = d3.group(summary, (r) => r['state or territory'])
-
-  return { geo: { ...geo, features }, totalsMap, populationByState, trendByState }
+  return {
+    geo: { ...geo, features },
+    totalsMap,
+    populationByState,
+    annualByState,
+  }
 }
 
-/* chart() — render the choropleth + drill. */
+/* chart() — render map with bubbles + drill. */
 export function chart(data) {
   const root = document.querySelector('#chart-2-states .placeholder-canvas')
   if (!root) return
@@ -88,7 +106,7 @@ export function chart(data) {
   const tooltip = makeTooltip()
 
   const totals = Array.from(data.totalsMap.values())
-  const color = choroplethColor([0, d3.max(totals)])
+  const r = d3.scaleSqrt().domain([0, d3.max(totals) || 1]).range([6, 42])
 
   const projection = d3.geoMercator().fitSize([W - 60, H - 60], data.geo)
   const path = d3.geoPath(projection)
@@ -96,18 +114,47 @@ export function chart(data) {
   // ---- map ----
   const mapG = mapLayer.append('g').attr('transform', 'translate(30,40)')
 
+  // base state polygons
   mapG
     .selectAll('path.state')
     .data(data.geo.features)
     .join('path')
     .attr('class', 'state')
     .attr('d', path)
-    .attr('fill', (f) => (f.properties.cases > 0 ? color(f.properties.cases) : COLORS.border))
-    .attr('stroke', COLORS.bg)
+    .attr('fill', COLORS.accentBg)
+    .attr('stroke', COLORS.border)
     .attr('stroke-width', 1)
+
+  // bubbles — one per state, radius = sqrt(cases)
+  const bubbles = mapG
+    .selectAll('g.bubble')
+    .data(data.geo.features.filter((f) => f.properties.cases > 0))
+    .join('g')
+    .attr('class', 'bubble')
+    .attr('transform', (f) => `translate(${path.centroid(f)})`)
     .style('cursor', 'pointer')
+
+  bubbles
+    .append('circle')
+    .attr('r', (f) => r(f.properties.cases))
+    .attr('fill', COLORS.accent)
+    .attr('fill-opacity', 0.55)
+    .attr('stroke', COLORS.accent)
+    .attr('stroke-width', 1.5)
+
+  bubbles
+    .append('text')
+    .attr('text-anchor', 'middle')
+    .attr('dy', '0.35em')
+    .attr('fill', COLORS.textH)
+    .style('font-size', CHART_AXIS_FONT)
+    .style('font-weight', '600')
+    .style('pointer-events', 'none')
+    .text((f) => f.properties.code)
+
+  bubbles
     .on('mouseenter', function (ev, f) {
-      d3.select(this).transition().duration(120).attr('stroke', COLORS.textH).attr('stroke-width', 1.6)
+      d3.select(this).select('circle').transition().duration(120).attr('fill-opacity', 0.85)
       tooltip.show(
         `<strong>${f.properties.STATE_NAME}</strong><br>` +
           `${fmt.int(f.properties.cases)} cases 2011–2021<br>` +
@@ -117,25 +164,10 @@ export function chart(data) {
     })
     .on('mousemove', (ev) => tooltip.move(ev))
     .on('mouseleave', function () {
-      d3.select(this).transition().duration(120).attr('stroke', COLORS.bg).attr('stroke-width', 1)
+      d3.select(this).select('circle').transition().duration(120).attr('fill-opacity', 0.55)
       tooltip.hide()
     })
     .on('click', (ev, f) => openDrill(f.properties.code, f.properties.STATE_NAME))
-
-  // state-code labels on top
-  mapG
-    .selectAll('text.state-label')
-    .data(data.geo.features.filter((f) => f.properties.cases > 0))
-    .join('text')
-    .attr('class', 'state-label')
-    .attr('transform', (f) => `translate(${path.centroid(f)})`)
-    .attr('text-anchor', 'middle')
-    .attr('dy', '0.35em')
-    .attr('fill', COLORS.textH)
-    .style('font-size', CHART_AXIS_FONT)
-    .style('font-weight', '600')
-    .style('pointer-events', 'none')
-    .text((f) => f.properties.code)
 
   // title strip
   mapLayer
@@ -146,10 +178,10 @@ export function chart(data) {
     .style('font-size', CHART_AXIS_FONT)
     .style('letter-spacing', '1px')
     .style('text-transform', 'uppercase')
-    .text('Hospitalised cases by state, 2011–2021 · click a state')
+    .text('Hospitalised cases by state, 2011–2021 · click a bubble')
 
-  // simple choropleth legend in the bottom-left corner
-  drawChoroplethLegend(mapLayer, color, [40, H - 50])
+  // bubble-size legend (bottom-left)
+  drawBubbleLegend(mapLayer, r, [40, H - 90])
 
   // ---- drill ----
   function openDrill(stateCode, stateName) {
@@ -195,33 +227,30 @@ export function chart(data) {
       .style('font-weight', '600')
       .text(stateName)
 
-    // collate per-year data for the state
-    const stateRows = (data.trendByState.get(stateCode) || [])
-      .slice()
-      .sort((a, b) => a['calendar year'] - b['calendar year'])
+    const stateRows = data.annualByState.get(stateCode) || []
     const popRows = (data.populationByState.get(stateCode) || [])
       .slice()
       .sort((a, b) => a.year - b.year)
 
-    const years = stateRows.map((r) => r['calendar year'])
+    const years = stateRows.map((d) => d.year)
     const yearCount = Math.max(popRows.length, years.length, 1)
     const bw = drillBarSize(dIW, yearCount)
     const x = d3.scaleLinear().domain(d3.extent(years)).range([bw / 2, dIW - bw / 2])
     const yCases = d3
       .scaleLinear()
-      .domain([0, d3.max(stateRows, (r) => r['count of cases']) * 1.1])
+      .domain([0, d3.max(stateRows, (d) => d.cases) * 1.1])
       .nice()
       .range([dIH, 0])
     const yPop = d3
       .scaleLinear()
-      .domain([0, d3.max(popRows, (r) => r.population) * 1.1])
+      .domain([0, d3.max(popRows, (d) => d.population) * 1.1])
       .nice()
       .range([dIH, 0])
 
     const dg = drillLayer.append('g').attr('transform', `translate(${dM.left},${dM.top})`)
     drawGrid(dg, x, yCases, dIW, dIH)
 
-    // population bars — z-order BELOW the line
+    // population bars — behind the line
     dg.append('g')
       .selectAll('rect.pop-bar')
       .data(popRows)
@@ -242,35 +271,36 @@ export function chart(data) {
       .on('mousemove', (ev) => tooltip.move(ev))
       .on('mouseleave', () => tooltip.hide())
 
-    // cases line — phase-coloured for VIC + NSW only
+    // cases line — phase-coloured for VIC + NSW only; segmented by
+    // admission with NO line drawn across admission boundaries.
     const isPhased = stateCode === 'VIC' || stateCode === 'NSW'
     if (isPhased) {
-      const segments = []
-      for (let i = 0; i < stateRows.length - 1; i++) {
-        segments.push({
-          from: stateRows[i],
-          to: stateRows[i + 1],
-          admission: stateAdmissionFor(stateRows[i + 1]['calendar year'], stateCode),
-        })
+      const groups = []
+      for (const d of stateRows) {
+        const last = groups[groups.length - 1]
+        if (last && last.admission === d.admission) last.points.push(d)
+        else groups.push({ admission: d.admission, points: [d] })
       }
+      const lineGen = d3
+        .line()
+        .x((d) => x(d.year))
+        .y((d) => yCases(d.cases))
       dg.append('g')
-        .selectAll('path.seg')
-        .data(segments)
+        .selectAll('path.group')
+        .data(groups.filter((gr) => gr.points.length > 1))
         .join('path')
-        .attr('d', (s) =>
-          d3
-            .line()
-            .x((d) => x(d['calendar year']))
-            .y((d) => yCases(d['count of cases']))([s.from, s.to])
-        )
+        .attr('class', 'group')
+        .attr('d', (gr) => lineGen(gr.points))
         .attr('fill', 'none')
-        .attr('stroke', (s) => PHASE_PALETTE[s.admission])
+        .attr('stroke', (gr) => PHASE_PALETTE[gr.admission])
         .attr('stroke-width', 3)
+        .attr('stroke-linecap', 'round')
+        .attr('stroke-dasharray', (gr) => PHASE_DASH[gr.admission] || null)
     } else {
       const lineGen = d3
         .line()
-        .x((d) => x(d['calendar year']))
-        .y((d) => yCases(d['count of cases']))
+        .x((d) => x(d.year))
+        .y((d) => yCases(d.cases))
       dg.append('path')
         .datum(stateRows)
         .attr('d', lineGen)
@@ -279,27 +309,23 @@ export function chart(data) {
         .attr('stroke-width', 3)
     }
 
-    // dots on the line
+    // dots on the line — coloured by admission for the phased states
     dg.append('g')
       .selectAll('circle.case-dot')
       .data(stateRows)
       .join('circle')
       .attr('class', 'case-dot')
-      .attr('cx', (d) => x(d['calendar year']))
-      .attr('cy', (d) => yCases(d['count of cases']))
+      .attr('cx', (d) => x(d.year))
+      .attr('cy', (d) => yCases(d.cases))
       .attr('r', 5)
-      .attr('fill', (d) =>
-        isPhased
-          ? PHASE_PALETTE[stateAdmissionFor(d['calendar year'], stateCode)]
-          : COLORS.accent
-      )
+      .attr('fill', (d) => (isPhased ? PHASE_PALETTE[d.admission] : COLORS.accent))
       .attr('stroke', COLORS.bg)
       .attr('stroke-width', 2)
       .on('mouseenter', (ev, d) =>
         tooltip.show(
-          `<strong>${d['calendar year']}</strong><br>` +
-            `${fmt.int(d['count of cases'])} cases<br>` +
-            `${fmt.int(d['bed days'])} bed days`,
+          `<strong>${d.year}</strong><br>` +
+            `${fmt.int(d.cases)} cases<br>` +
+            `${fmt.int(d.bed_days)} bed days`,
           ev
         )
       )
@@ -340,7 +366,6 @@ export function chart(data) {
       .style('text-transform', 'uppercase')
       .text('Population (bar)')
 
-    // admission legend — drawn on the drill view (per spec)
     drawAdmissionLegend(drillLayer, [dM.left, H - 38], isPhased)
 
     mapLayer.style('display', 'none')
@@ -353,31 +378,37 @@ export function chart(data) {
   }
 }
 
-/* small horizontal colour ramp for the choropleth */
-function drawChoroplethLegend(parent, color, [x, y]) {
-  const w = 180
-  const h = 10
+/* tiny "small/big" bubble-size legend */
+function drawBubbleLegend(parent, r, [x, y]) {
+  const [, maxVal] = r.domain()
+  const sample = [Math.round(maxVal * 0.2), Math.round(maxVal * 0.6), maxVal]
   const g = parent.append('g').attr('transform', `translate(${x},${y})`)
-  const id = `grad-ch2-${Math.random().toString(36).slice(2, 8)}`
-  const grad = g.append('defs').append('linearGradient').attr('id', id)
-  grad.append('stop').attr('offset', '0%').attr('stop-color', color.range()[0])
-  grad.append('stop').attr('offset', '100%').attr('stop-color', color(color.domain()[1]))
-  g.append('rect').attr('width', w).attr('height', h).attr('fill', `url(#${id})`).attr('rx', 2)
   g.append('text')
-    .attr('y', -6)
+    .attr('y', 0)
     .attr('fill', COLORS.text)
     .style('font-size', CHART_LEGEND_FONT)
     .style('letter-spacing', '0.8px')
     .style('text-transform', 'uppercase')
-    .text('Legend: Total cases — heat scale')
-  g.append('text').attr('y', h + 14).attr('fill', COLORS.text).style('font-size', CHART_AXIS_FONT).text('0')
-  g.append('text')
-    .attr('x', w)
-    .attr('y', h + 14)
-    .attr('text-anchor', 'end')
-    .attr('fill', COLORS.text)
-    .style('font-size', CHART_AXIS_FONT)
-    .text(fmt.compact(color.domain()[1]))
+    .text('Legend: Total cases — bubble size')
+  let cursor = 0
+  sample.forEach((v) => {
+    const rad = r(v)
+    g.append('circle')
+      .attr('cx', cursor + rad)
+      .attr('cy', 24 + rad)
+      .attr('r', rad)
+      .attr('fill', COLORS.accent)
+      .attr('fill-opacity', 0.35)
+      .attr('stroke', COLORS.accent)
+    g.append('text')
+      .attr('x', cursor + rad)
+      .attr('y', 24 + rad * 2 + 14)
+      .attr('text-anchor', 'middle')
+      .attr('fill', COLORS.text)
+      .style('font-size', CHART_AXIS_FONT)
+      .text(fmt.compact(v))
+    cursor += rad * 2 + 22
+  })
 }
 
 function drawAdmissionLegend(parent, [x, y], isPhased) {
@@ -395,17 +426,22 @@ function drawAdmissionLegend(parent, [x, y], isPhased) {
   }
   Object.entries(PHASE_PALETTE).forEach(([label, color]) => {
     const it = g.append('g').attr('transform', `translate(${cursor},10)`)
-    it.append('rect').attr('y', 6).attr('width', 14).attr('height', 4).attr('rx', 2).attr('fill', color)
+    it.append('line')
+      .attr('x1', 0)
+      .attr('x2', 24)
+      .attr('y1', 8)
+      .attr('y2', 8)
+      .attr('stroke', color)
+      .attr('stroke-width', 3)
+      .attr('stroke-linecap', 'round')
+      .attr('stroke-dasharray', PHASE_DASH[label] || null)
     const t = it
       .append('text')
-      .attr('x', 20)
+      .attr('x', 30)
       .attr('y', 12)
       .attr('fill', COLORS.text)
       .style('font-size', CHART_LEGEND_FONT)
       .text(label)
-    cursor += 22 + t.node().getComputedTextLength() + 22
+    cursor += 30 + t.node().getComputedTextLength() + 22
   })
 }
-
-// silence unused-name complaints from bundlers about unused exports
-void STATE_CODE_TO_NAME

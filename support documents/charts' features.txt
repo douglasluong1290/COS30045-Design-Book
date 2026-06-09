@@ -1,0 +1,55 @@
+dataset used: transformed_datasets.xlsx
+
+charts' features:
+- chart1: line chart
+	- sheet used: publication
+	- background: dotted light gray grid
+	- x axis: year
+	- y axis: count of cases
+	- legend: admission
+		- do not connect the lines between different admissions
+		- use different line type for different admission while maintaining color in a approximate hue
+	- interaction: hover on the line intersecting with a year pop up a tooltip showing the year and case count
+
+- chart2: choropleth chart
+	- sheet used: state
+	- map: Australia's states (according to the dataset)
+	- state: circle (size = sum of count of cases of the period)
+	- interaction: hovering on the circle will show a "see more" tooltip
+		- pressing on the circle -> pop to a line x bar chart
+		- line x bar chart: 
+			- line: count of cases throughout years
+			- bar: population of that year
+			- a back button on top left to return to the map chart
+		- legend: admission
+			- do not connect the lines between different admissions
+			- use different line type for different admission while maintaining color in a approximate hue
+
+- chart3: 2 horizontal bar charts facing each other
+	- sheet used: publication
+	- filter: gender
+	- charts: count of cases vs average bed days (derive average bed days, and round the number (>= 0.5 -> round up, else round down)
+	- small multiples: age groups
+	- background: vertical dotted light gray line
+	- include legend
+	- add interaction (showing tooltip)
+	- note:
+		- bar on left: count of cases, y axis on the left
+		- bar on right: average bed days, y axis on the right
+
+- chart4: 2 horizontal bar charts facing each other
+	- sheet used: publication
+	- x axis: count of cases vs average bed days
+	- y axis :road user
+	- background: dotted light gray grid
+	- include legend
+	- interaction: hover on the points will show a tooltip road user, count of cases, and count of bed days
+	- note:
+		- bar on left: count of cases, y axis on the left
+		- bar on right: average bed days, y axis on the right
+
+- chart5: heatmap
+	- sheet used: state_road
+	- x axis: states
+	- y axis: road users
+	- value: sum of count of cases

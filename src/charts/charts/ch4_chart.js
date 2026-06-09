@@ -1,12 +1,12 @@
-/* Chart 4 — Road-user dumbbell.
+/* Chart 4 — Back-to-back tornado bar chart, by road user.
  *
  * Sheet: publication
  * Spec:
- *   - x: sum of count of cases vs sum of bed days
- *   - y: road user
+ *   - LEFT bar: count of cases
+ *   - RIGHT bar: average bed days (sum bed days / sum cases, rounded)
+ *   - rows: road user
  *   - dotted light gray grid background
- *   - include legend
- *   - hover: tooltip with road user, cases, bed days
+ *   - legend + hover tooltips
  *
  * Baked-in filter: drop rows where Road user = "Not applicable".
  * (Mirrors the page-level filter in the final pbix.)
@@ -14,36 +14,27 @@
 
 import * as d3 from 'd3'
 import {
-  appendLegendPrefix,
-  CHART_FONT_FAMILY,
+  CHART_AXIS_FONT,
   COLORS,
+  appendLegendPrefix,
   fmt,
   makeTooltip,
   mountSvg,
   styleAxisChrome,
   styleAxisTicks,
-  wrapAxisTickLabel,
+  styleChartText,
 } from './constants.js'
 
-const W = 1300
+const W = 1080
 const H = 700
-const M = { top: 70, right: 140, bottom: 50, left: 300 }
-const CHART_SHIFT_X = 100
-const PLOT_GAP_X = 14
-/** Chart 4 only — +2px over the shared 14px chart typography. */
-const CH4_FONT = '16px'
-const CH4_TEXT_STYLE = `font-size:${CH4_FONT};font-family:${CHART_FONT_FAMILY}`
-
-function styleCh4Text(selection, fill = COLORS.text) {
-  return selection
-    .attr('fill', fill)
-    .style('font-size', CH4_FONT)
-    .style('font-family', CHART_FONT_FAMILY)
-}
+const M = { top: 90, right: 60, bottom: 60, left: 60 }
 const IW = W - M.left - M.right
 const IH = H - M.top - M.bottom
+const CENTER_GAP = 320
+const HALF = (IW - CENTER_GAP) / 2
 
-/* load() — parse + filter + aggregate by Road user */
+/* load() — parse + filter "Not applicable" + aggregate per road user.
+ * Average bed days = round(sum(bed_days) / sum(cases)).             */
 export function load(csv) {
   const rows = d3.csvParse(csv, d3.autoType)
   const filtered = rows.filter((r) => {
@@ -52,10 +43,12 @@ export function load(csv) {
   })
   const agg = d3.rollups(
     filtered,
-    (v) => ({
-      cases: d3.sum(v, (r) => r['Count of cases'] ?? 0),
-      bed_days: d3.sum(v, (r) => r['Bed days'] ?? 0),
-    }),
+    (v) => {
+      const cases = d3.sum(v, (r) => r['Count of cases'] ?? 0)
+      const bed_days = d3.sum(v, (r) => r['Bed days'] ?? 0)
+      const avg_bed_days = cases > 0 ? Math.round(bed_days / cases) : 0
+      return { cases, bed_days, avg_bed_days }
+    },
     (r) => r['Road user']
   )
   return agg
@@ -63,152 +56,177 @@ export function load(csv) {
     .sort((a, b) => b.cases - a.cases)
 }
 
-/* chart() — render dumbbell */
+/* chart() */
 export function chart(data) {
   const root = document.querySelector('#chart-4-mechanism .placeholder-canvas')
   if (!root) return
 
-  const svg = mountSvg(root, { width: W, height: H }).style('font-size', CH4_FONT)
-  // center the chart group horizontally within the SVG by using the
-  // midpoint of the left/right margins, and apply the top margin as before
-  const centerX = (M.left + M.right) / 2
-  const chartG = svg
-    .append('g')
-    .attr('class', 'chart-content')
-    .attr('transform', `translate(${centerX + CHART_SHIFT_X},${M.top})`)
-  const plotG = chartG.append('g').attr('class', 'plot-layer').attr('transform', `translate(${PLOT_GAP_X},0)`)
+  const svg = mountSvg(root, { width: W, height: H })
   const tooltip = makeTooltip()
 
-  const y = d3
-    .scaleBand()
-    .domain(data.map((d) => d.road_user))
-    .range([0, IH])
-    .padding(0.3)
+  // ---- legend ----
+  const legend = svg.append('g').attr('class', 'legend').attr('transform', `translate(${M.left},22)`)
+  let lc = appendLegendPrefix(legend, { y: 14 })
+  ;[
+    { label: 'Count of cases', color: COLORS.accent },
+    { label: 'Average bed days', color: COLORS.muted },
+  ].forEach((it) => {
+    const item = legend.append('g').attr('transform', `translate(${lc},0)`)
+    item.append('rect').attr('y', 8).attr('width', 16).attr('height', 8).attr('rx', 2).attr('fill', it.color)
+    const t = styleChartText(item.append('text').attr('x', 22).attr('y', 14), COLORS.text).text(it.label)
+    lc += 22 + t.node().getComputedTextLength() + 24
+  })
 
-  const x = d3
-    .scaleLinear()
-    .domain([0, d3.max(data, (d) => Math.max(d.cases, d.bed_days)) * 1.05])
-    .nice()
-    .range([0, IW])
+  // ---- chart group ----
+  const g = svg.append('g').attr('transform', `translate(${M.left},${M.top})`)
 
-  // dotted vertical grid
-  plotG.append('g')
+  // column headers
+  styleChartText(
+    g.append('text').attr('x', HALF - 4).attr('y', -16).attr('text-anchor', 'end'),
+    COLORS.accent
+  )
+    .style('letter-spacing', '1px')
+    .style('text-transform', 'uppercase')
+    .text('Count of cases')
+  styleChartText(
+    g.append('text').attr('x', HALF + CENTER_GAP + 4).attr('y', -16).attr('text-anchor', 'start'),
+    COLORS.muted
+  )
+    .style('letter-spacing', '1px')
+    .style('text-transform', 'uppercase')
+    .text('Average bed days')
+
+  const y = d3.scaleBand().domain(data.map((d) => d.road_user)).range([0, IH]).padding(0.22)
+
+  const maxCases = d3.max(data, (d) => d.cases) || 1
+  const maxAvg = d3.max(data, (d) => d.avg_bed_days) || 1
+
+  const xLeft = d3.scaleLinear().domain([0, maxCases]).nice().range([HALF, 0])
+  const xRight = d3.scaleLinear().domain([0, maxAvg]).nice().range([HALF + CENTER_GAP, IW])
+
+  // vertical dotted grids
+  g.append('g')
     .selectAll('line')
-    .data(x.ticks(6))
+    .data(xLeft.ticks(5))
     .join('line')
-    .attr('x1', (d) => x(d))
-    .attr('x2', (d) => x(d))
+    .attr('x1', (d) => xLeft(d))
+    .attr('x2', (d) => xLeft(d))
+    .attr('y1', 0)
+    .attr('y2', IH)
+    .attr('stroke', COLORS.border)
+    .attr('stroke-dasharray', '2 4')
+  g.append('g')
+    .selectAll('line')
+    .data(xRight.ticks(5))
+    .join('line')
+    .attr('x1', (d) => xRight(d))
+    .attr('x2', (d) => xRight(d))
     .attr('y1', 0)
     .attr('y2', IH)
     .attr('stroke', COLORS.border)
     .attr('stroke-dasharray', '2 4')
 
-  // x-axis
-  plotG
-    .append('g')
-    .attr('transform', `translate(0,${IH})`)
-    .call(d3.axisBottom(x).ticks(6).tickFormat(fmt.compact))
-    .call((s) => styleCh4Text(s.selectAll('text')))
-    .call((s) => styleAxisChrome(s))
-  // Y-axis labels only (no axis line); plot shifted right of labels
-  const yAxis = chartG.append('g').attr('class', 'y-axis-layer').call(d3.axisLeft(y).tickSize(0))
-  yAxis.selectAll('path').attr('stroke', 'none')
-  yAxis.selectAll('line').attr('stroke', 'none')
-  styleCh4Text(yAxis.selectAll('text'), COLORS.textH)
+  // central road-user labels — wrap long labels at commas
+  g.selectAll('text.ru-label')
+    .data(data)
+    .join('text')
+    .attr('class', 'ru-label')
+    .attr('x', HALF + CENTER_GAP / 2)
+    .attr('y', (d) => y(d.road_user) + y.bandwidth() / 2)
+    .attr('text-anchor', 'middle')
+    .attr('fill', COLORS.textH)
+    .style('font-size', CHART_AXIS_FONT)
+    .style('font-weight', '500')
+    .each(function (d) {
+      const node = d3.select(this)
+      const parts = d.road_user.length > 28 ? d.road_user.split(/,\s+/) : [d.road_user]
+      parts.forEach((line, i) => {
+        node
+          .append('tspan')
+          .attr('x', HALF + CENTER_GAP / 2)
+          .attr('dy', i === 0 ? `${-(parts.length - 1) * 0.5 + 0.35}em` : '1.2em')
+          .text(line)
+      })
+    })
+
+  // bars
+  g.selectAll('rect.bar-left')
+    .data(data)
+    .join('rect')
+    .attr('class', 'bar-left')
+    .attr('y', (d) => y(d.road_user))
+    .attr('height', y.bandwidth())
+    .attr('x', (d) => xLeft(d.cases))
+    .attr('width', (d) => HALF - xLeft(d.cases))
+    .attr('fill', COLORS.accent)
+    .attr('rx', 2)
+  g.selectAll('rect.bar-right')
+    .data(data)
+    .join('rect')
+    .attr('class', 'bar-right')
+    .attr('y', (d) => y(d.road_user))
+    .attr('height', y.bandwidth())
+    .attr('x', HALF + CENTER_GAP)
+    .attr('width', (d) => xRight(d.avg_bed_days) - (HALF + CENTER_GAP))
+    .attr('fill', COLORS.muted)
+    .attr('rx', 2)
+
+  // value labels at the outer end of each bar
+  g.selectAll('text.lbl-left')
+    .data(data)
+    .join('text')
+    .attr('class', 'lbl-left')
+    .attr('x', (d) => xLeft(d.cases) - 8)
+    .attr('y', (d) => y(d.road_user) + y.bandwidth() / 2)
+    .attr('dy', '0.35em')
     .attr('text-anchor', 'end')
-    .attr('transform', 'translate(-30,0)')
-    .call(wrapAxisTickLabel, 4)
-  yAxis.selectAll('tspan').style('font-size', CH4_FONT).style('font-family', CHART_FONT_FAMILY)
-
-  styleCh4Text(
-    plotG.append('text').attr('x', IW / 2).attr('y', IH + 38).attr('text-anchor', 'middle')
-  )
-    .style('letter-spacing', '1px')
-    .style('text-transform', 'uppercase')
-    .text('Count')
-
-  // dumbbells
-  const row = plotG
-    .append('g')
-    .selectAll('g.dumbbell')
-    .data(data, (d) => d.road_user)
-    .join('g')
-    .attr('class', 'dumbbell')
-    .attr('transform', (d) => `translate(0,${y(d.road_user) + y.bandwidth() / 2})`)
-    .style('cursor', 'pointer')
-
-  row
-    .append('line')
-    .attr('x1', (d) => x(Math.min(d.cases, d.bed_days)))
-    .attr('x2', (d) => x(Math.max(d.cases, d.bed_days)))
-    .attr('y1', 0)
-    .attr('y2', 0)
-    .attr('stroke', COLORS.border)
-    .attr('stroke-width', 2)
-  row
-    .append('circle')
-    .attr('class', 'pt-cases')
-    .attr('cx', (d) => x(d.cases))
-    .attr('r', 8)
-    .attr('fill', COLORS.accent)
-    .attr('stroke', COLORS.bg)
-    .attr('stroke-width', 2)
-  row
-    .append('circle')
-    .attr('class', 'pt-beds')
-    .attr('cx', (d) => x(d.bed_days))
-    .attr('r', 8)
-    .attr('fill', COLORS.muted)
-    .attr('stroke', COLORS.bg)
-    .attr('stroke-width', 2)
-
-  // value labels (outboard of whichever dot is the outer one)
-  row
-    .append('text')
-    .attr('x', (d) => x(d.cases) + (d.cases >= d.bed_days ? 14 : -14))
-    .attr('text-anchor', (d) => (d.cases >= d.bed_days ? 'start' : 'end'))
-    .attr('dy', '0.35em')
-    .attr('fill', COLORS.accent)
+    .attr('fill', COLORS.textH)
+    .style('font-size', CHART_AXIS_FONT)
     .text((d) => fmt.compact(d.cases))
-  row
-    .append('text')
-    .attr('x', (d) => x(d.bed_days) + (d.bed_days > d.cases ? 14 : -14))
-    .attr('text-anchor', (d) => (d.bed_days > d.cases ? 'start' : 'end'))
+  g.selectAll('text.lbl-right')
+    .data(data)
+    .join('text')
+    .attr('class', 'lbl-right')
+    .attr('x', (d) => xRight(d.avg_bed_days) + 8)
+    .attr('y', (d) => y(d.road_user) + y.bandwidth() / 2)
     .attr('dy', '0.35em')
-    .attr('fill', COLORS.muted)
-    .text((d) => fmt.compact(d.bed_days))
+    .attr('text-anchor', 'start')
+    .attr('fill', COLORS.textH)
+    .style('font-size', CHART_AXIS_FONT)
+    .text((d) => `${d.avg_bed_days}`)
 
-  row
-    .on('mouseenter', function (ev, d) {
-      d3.select(this).selectAll('circle').transition().duration(120).attr('r', 11)
+  // axes
+  g.append('g')
+    .attr('transform', `translate(0,${IH})`)
+    .call(d3.axisBottom(xLeft).ticks(5).tickFormat(fmt.compact))
+    .call((s) => styleAxisTicks(s))
+    .call((s) => styleAxisChrome(s))
+  g.append('g')
+    .attr('transform', `translate(0,${IH})`)
+    .call(d3.axisBottom(xRight).ticks(5))
+    .call((s) => styleAxisTicks(s))
+    .call((s) => styleAxisChrome(s))
+
+  // hover hit-zones
+  g.selectAll('rect.row-hit')
+    .data(data)
+    .join('rect')
+    .attr('class', 'row-hit')
+    .attr('x', 0)
+    .attr('y', (d) => y(d.road_user))
+    .attr('width', IW)
+    .attr('height', y.bandwidth())
+    .attr('fill', 'transparent')
+    .style('cursor', 'pointer')
+    .on('mouseenter', (ev, d) =>
       tooltip.show(
         `<strong>${d.road_user}</strong><br>` +
-          `${fmt.int(d.cases)} cases<br>${fmt.int(d.bed_days)} bed days<br>` +
-          `<span style="color:${COLORS.text};${CH4_TEXT_STYLE}">${(d.bed_days / d.cases).toFixed(1)} bed days / case</span>`,
+          `${fmt.int(d.cases)} cases<br>` +
+          `${fmt.int(d.bed_days)} total bed days<br>` +
+          `${d.avg_bed_days} average bed days / case`,
         ev
       )
-    })
+    )
     .on('mousemove', (ev) => tooltip.move(ev))
-    .on('mouseleave', function () {
-      d3.select(this).selectAll('circle').transition().duration(120).attr('r', 8)
-      tooltip.hide()
-    })
-
-  // legend
-  const legend = svg
-    .append('g')
-    .attr('class', 'legend')
-    .attr('transform', `translate(${M.left + CHART_SHIFT_X},24)`)
-  const items = [
-    { label: 'Count of cases', color: COLORS.accent },
-    { label: 'Bed days', color: COLORS.muted },
-  ]
-  let cursor = appendLegendPrefix(legend, { y: 14 })
-  items.forEach((it) => {
-    const item = legend.append('g').attr('transform', `translate(${cursor},0)`)
-    item.append('circle').attr('r', 6).attr('cx', 6).attr('cy', 10).attr('fill', it.color)
-    const t = styleCh4Text(item.append('text').attr('x', 18).attr('y', 14)).text(it.label)
-    cursor += 18 + t.node().getComputedTextLength() + 28
-  })
-  legend.selectAll('text').style('font-size', CH4_FONT).style('font-family', CHART_FONT_FAMILY)
+    .on('mouseleave', () => tooltip.hide())
 }
