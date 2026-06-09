@@ -12,7 +12,7 @@ import { load as loadCh3, chart as chartCh3 } from './charts/ch3_chart.js'
 import { load as loadCh4, chart as chartCh4 } from './charts/ch4_chart.js'
 import { load as loadCh5, chart as chartCh5 } from './charts/ch5_chart.js'
 
-const GEO_PATH = '/data/au-states.geojson'
+const GEO_PATH = `${import.meta.env.BASE_URL}data/au-states.geojson`
 
 export async function loadCharts() {
   try {
